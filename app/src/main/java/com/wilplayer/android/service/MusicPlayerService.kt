@@ -1,5 +1,7 @@
 package com.wilplayer.android.service
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
 import androidx.media3.common.*
 import androidx.media3.exoplayer.ExoPlayer
@@ -68,8 +70,6 @@ class MusicPlayerService : MediaSessionService() {
 
 // ── Boot Receiver ──────────────────────────────────────────────────────────────
 
-import android.content.BroadcastReceiver
-import android.content.Context
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
