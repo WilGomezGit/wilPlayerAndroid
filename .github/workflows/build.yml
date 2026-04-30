@@ -36,10 +36,10 @@ jobs:
       - name: Create local.properties
         run: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-          echo "YOUTUBE_API_KEY=${{ secrets.YOUTUBE_API_KEY }}" >> local.properties
+          echo "YOUTUBE_API_KEY=${{ secrets.YOUTUBE_API_KEY || 'placeholder_key' }}" >> local.properties
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon -PYOUTUBE_API_KEY="${{ secrets.YOUTUBE_API_KEY || 'placeholder_key' }}"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
