@@ -25,6 +25,7 @@ android {
         // YouTube Data API Key — replace with your key in local.properties
         buildConfigField("String", "YOUTUBE_API_KEY", "\"${project.findProperty("YOUTUBE_API_KEY") ?: ""}\"")
         buildConfigField("String", "YOUTUBE_BASE_URL", "\"https://www.googleapis.com/youtube/v3/\"")
+        manifestPlaceholders["YOUTUBE_API_KEY"] = project.findProperty("YOUTUBE_API_KEY")?.toString() ?: ""
     }
 
     buildTypes {
