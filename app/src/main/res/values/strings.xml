@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WilPlayer</string>
+    <string name="app_description">El mejor reproductor de música con YouTube</string>
+    <string name="channel_playback_name">Reproducción</string>
+    <string name="channel_playback_description">Notificaciones de reproducción de música</string>
+</resources>
