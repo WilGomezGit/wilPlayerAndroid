@@ -23,6 +23,7 @@ kotlinxSerialization = "1.6.3"
 gson = "2.10.1"
 accompanist = "0.34.0"
 workmanager = "2.9.0"
+material = "1.11.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -88,6 +89,9 @@ accompanist-systemuicontroller = { group = "com.google.accompanist", name = "acc
 
 # WorkManager
 work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workmanager" }
+
+# Material Components
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
