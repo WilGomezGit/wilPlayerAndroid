@@ -7,7 +7,6 @@
     </style>
     <style name="Theme.WilPlayer.SplashScreen" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#08080F</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
         <item name="postSplashScreenTheme">@style/Theme.WilPlayer</item>
     </style>
 </resources>
