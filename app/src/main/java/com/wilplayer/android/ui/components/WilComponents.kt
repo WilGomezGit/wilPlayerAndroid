@@ -29,6 +29,9 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.wilplayer.android.domain.model.Song
 import com.wilplayer.android.ui.theme.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 
 // ── CoverArt ─────────────────────────────────────────────────────────────────
 
@@ -317,9 +320,6 @@ fun ErrorState(
 
 // ── Icon aliases (centralized) ─────────────────────────────────────────────────
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 
 val PlayIcon      get() = Icons.Filled.PlayArrow
 val PauseIcon     get() = Icons.Filled.Pause
