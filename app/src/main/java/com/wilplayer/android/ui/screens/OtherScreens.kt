@@ -10,6 +10,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -268,7 +271,7 @@ fun ProfileScreen(modifier: Modifier = Modifier) {
                 Text(emoji, fontSize = 18.sp)
                 Text(label, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TextPrimary, modifier = Modifier.weight(1f))
                 Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Filled.ChevronRight,
+                    imageVector = Icons.Filled.ChevronRight,
                     contentDescription = null,
                     tint = TextTertiary,
                     modifier = Modifier.size(18.dp)
