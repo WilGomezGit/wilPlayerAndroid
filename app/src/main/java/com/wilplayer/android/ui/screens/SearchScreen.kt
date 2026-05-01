@@ -11,6 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -125,7 +127,7 @@ private fun WilSearchBar(
             {
                 IconButton(onClick = { onQueryChange("") }) {
                     Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Filled.Clear,
+                        imageVector = Icons.Filled.Clear,
                         contentDescription = "Limpiar",
                         tint = TextTertiary
                     )
