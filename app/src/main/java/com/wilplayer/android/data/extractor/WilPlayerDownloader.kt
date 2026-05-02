@@ -18,8 +18,10 @@ class WilPlayerDownloader private constructor() : Downloader() {
 
     override fun execute(request: Request): Response {
         // 1. Build the OkHttp request
+        // IMPORTANT: NewPipe's Request object uses method calls (), not Kotlin properties.
         val okHttpRequestBuilder = OkHttpRequest.Builder()
-            .url(request.url) // In Kotlin, use property access
+            .url(request.url())
+            .method(request.httpMethod(), null)
 
         // 2. Add headers
         request.headers().forEach { (headerName, headerValues) ->
