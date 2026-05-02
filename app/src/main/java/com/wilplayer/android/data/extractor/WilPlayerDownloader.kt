@@ -5,7 +5,6 @@ import org.schabi.newpipe.extractor.downloader.Request
 import org.schabi.newpipe.extractor.downloader.Response
 import okhttp3.OkHttpClient
 import okhttp3.Request as OkHttpRequest
-import okhttp3.Response as OkHttpResponse
 
 /**
  * Custom Downloader for NewPipe Extractor using OkHttp.
@@ -17,12 +16,10 @@ class WilPlayerDownloader private constructor() : Downloader() {
         .followRedirects(true)
         .build()
 
-    @Throws(java.io.IOException::class)
     override fun execute(request: Request): Response {
         // 1. Build the OkHttp request
         val okHttpRequestBuilder = OkHttpRequest.Builder()
-            .url(request.url())
-            .method(request.httpMethod(), null) // NewPipe usually uses GET
+            .url(request.url) // In Kotlin, use property access
 
         // 2. Add headers
         request.headers().forEach { (headerName, headerValues) ->
@@ -31,22 +28,23 @@ class WilPlayerDownloader private constructor() : Downloader() {
             }
         }
 
-        // 3. Execute the request
-        val okHttpResponse: OkHttpResponse = client.newCall(okHttpRequestBuilder.build()).execute()
+        // 3. Execute and handle response safely
+        val okHttpRequest = okHttpRequestBuilder.build()
+        val okHttpResponse = client.newCall(okHttpRequest).execute()
         
-        // 4. Extract body and close response properly using use block
-        val responseBodyString = okHttpResponse.use { response ->
-            response.body?.string() ?: ""
+        // 4. Extract all data INSIDE the use block to ensure response is open
+        return okHttpResponse.use { resp ->
+            val body = resp.body?.string() ?: ""
+            
+            // 5. Return the NewPipe Response object with correct types
+            Response(
+                resp.code,
+                resp.message,
+                resp.headers.toMultimap(),
+                body,
+                resp.request.url.toString()
+            )
         }
-
-        // 5. Return the NewPipe Response object
-        return Response(
-            okHttpResponse.code,
-            okHttpResponse.message,
-            okHttpResponse.headers.toMultimap(),
-            responseBodyString,
-            okHttpResponse.request.url.toString()
-        )
     }
 
     companion object {
