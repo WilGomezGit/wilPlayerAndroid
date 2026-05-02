@@ -211,6 +211,7 @@ private fun formatTotalDuration(ms: Long): String {
 
 @Composable
 fun ProfileScreen(modifier: Modifier = Modifier) {
+    var selectedSetting by remember { mutableStateOf<String?>(null)  }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -263,7 +264,7 @@ fun ProfileScreen(modifier: Modifier = Modifier) {
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .background(Surface0)
-                    .clickable {}
+                    .clickable { selectedSetting = label }
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -282,6 +283,17 @@ fun ProfileScreen(modifier: Modifier = Modifier) {
     }
 }
 
+    // Settings dialog
+    selectedSetting?.let { setting ->
+                AlertDialog(
+                                onDismissRequest = { selectedSetting = null },
+                                title = { Text(setting) },
+                                text = { Text("Esta opción estará disponible próximamente.") },
+                                confirmButton = {
+                                                    TextButton(onClick = { selectedSetting = null }) { Text("OK") }
+                                }
+                            )
+    }
 @Composable
 private fun StatItem(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
