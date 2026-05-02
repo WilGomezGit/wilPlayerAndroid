@@ -28,10 +28,9 @@ class HomeViewModel @Inject constructor(
             val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
                 init {
-                            // Only observe local library (playlists/recent plays) at startup.
-                            // Trending / recommendations are NOT loaded automatically to respect
-                            // the user preference of no default recommendations.
+                            // Observe local library and load trending songs upon initialization.
                             observeLibrary()
+                            loadTrending()
                 }
 
                     // Call this explicitly from the UI when the user pulls-to-refresh or
