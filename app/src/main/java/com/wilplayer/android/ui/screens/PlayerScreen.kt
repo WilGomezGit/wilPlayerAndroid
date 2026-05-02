@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Colorh
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -22,6 +22,8 @@ import com.wilplayer.android.domain.model.*
 import com.wilplayer.android.ui.PlayerViewModel
 import com.wilplayer.android.ui.components.*
 import com.wilplayer.android.ui.theme.*
+import android.media.AudioManager
+import androidx.compose.ui.platform.LocalContext
 
 enum class PlayerTab { COVER, LYRICS, RELATED }
 
@@ -262,25 +264,38 @@ private fun ClassicPlayerContent(
                 Icon(QueueIcon, contentDescription = "Cola", tint = TextTertiary, modifier = Modifier.size(20.dp))
             }
 
-            // Volume mini slider
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Icon(VolumeIcon, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(16.dp))
-                Box(
-                    modifier = Modifier
-                        .width(80.dp)
-                        .height(3.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(Surface3)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.7f)
-                            .fillMaxHeight()
-                            .background(TextSecondary)
-                    )
-                }
-            }
-
+                        // Volume slider — connected to system AudioManager
+                                    val context = LocalContext.current
+                        val audioManager = remember { context.getSystemService(android.content.Context.AUDIO_SERVICE) as AudioManager }
+                                    val maxVol = remember { audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).toFloat() }
+                                                var currentVol by remember {
+                                                                    mutableFloatStateOf(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat())
+                                                }
+                                                            Row(
+                                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                                                modifier = Modifier.width(140.dp)
+                                                                                            ) {
+                                                                                Icon(VolumeIcon, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(16.dp))
+                                                                                                Slider(
+                                                                                                                        value = currentVol,
+                                                                                                                        onValueChange = { newVol ->
+                                                                                                                                                    currentVol = newVol
+                                                                                                                                                    audioManager.setStreamVolume(
+                                                                                                                                                                                    AudioManager.STREAM_MUSIC,
+                                                                                                                                                                                    newVol.toInt(),
+                                                                                                                                                                                    0
+                                                                                                                                                                                )
+                                                                                                                        },
+                                                                                                                        valueRange = 0f..maxVol,
+                                                                                                                        modifier = Modifier.weight(1f).height(20.dp),
+                                                                                                                        colors = SliderDefaults.colors(
+                                                                                                                                                    thumbColor = TextSecondary,
+                                                                                                                                                    activeTrackColor = TextSecondary,
+                                                                                                                                                    inactiveTrackColor = Surface3
+                                                                                                                                                )
+                                                                                                                                        )
+                                                            }
             IconButton(onClick = {}) {
                 Icon(ShareIcon, contentDescription = "Compartir", tint = TextTertiary, modifier = Modifier.size(20.dp))
             }
