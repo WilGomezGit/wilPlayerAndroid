@@ -6,7 +6,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.schabi.newpipe.extractor.NewPipe
 import org.schabi.newpipe.extractor.ServiceList
-import org.schabi.newpipe.extractor.services.youtube.YoutubeService
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -41,40 +40,6 @@ class YoutubeStreamExtractor @Inject constructor(
         } catch (e: Exception) {
             e.printStackTrace()
             null
-        }
-    }
-}
-
-/**
- * Custom Downloader for NewPipe Extractor using OkHttp
- */
-class WilPlayerDownloader private constructor() : org.schabi.newpipe.extractor.downloader.Downloader() {
-    private val client = okhttp3.OkHttpClient.Builder()
-        .followRedirects(true)
-        .build()
-
-    override fun execute(request: org.schabi.newpipe.extractor.downloader.Request): org.schabi.newpipe.extractor.downloader.Response {
-        val builder = okhttp3.Request.Builder().url(request.url())
-        request.headers().forEach { (key, values) ->
-            values.forEach { value -> builder.addHeader(key, value) }
-        }
-        
-        val response = client.newCall(builder.build()).execute()
-        val body = response.body?.string()
-        return org.schabi.newpipe.extractor.downloader.Response(
-            response.code,
-            response.message,
-            response.headers.toMultimap(),
-            body,
-            response.request.url.toString()
-        )
-    }
-
-    companion object {
-        private var instance: WilPlayerDownloader? = null
-        fun getInstance(): WilPlayerDownloader {
-            if (instance == null) instance = WilPlayerDownloader()
-            return instance!!
         }
     }
 }

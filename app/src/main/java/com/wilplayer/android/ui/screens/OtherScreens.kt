@@ -25,6 +25,7 @@ import com.wilplayer.android.domain.model.Song
 import com.wilplayer.android.ui.PlaylistDetailViewModel
 import com.wilplayer.android.ui.PlayerViewModel
 import com.wilplayer.android.ui.ProfileViewModel
+import com.wilplayer.android.ui.ProfileUiState
 import com.wilplayer.android.ui.components.*
 import com.wilplayer.android.ui.theme.*
 
