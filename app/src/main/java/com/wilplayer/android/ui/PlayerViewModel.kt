@@ -11,6 +11,7 @@ import com.google.common.util.concurrent.MoreExecutors
 import com.wilplayer.android.data.repository.MusicRepository
 import com.wilplayer.android.domain.model.*
 import com.wilplayer.android.service.MusicPlayerService
+import com.wilplayer.android.data.extractor.YoutubeStreamExtractor
 import com.wilplayer.android.util.DurationParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -22,6 +23,7 @@ import javax.inject.Inject
 class PlayerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: MusicRepository,
+    private val extractor: YoutubeStreamExtractor,
 ) : ViewModel() {
 
     // ── Player state ──────────────────────────────────────────────────────────
@@ -103,12 +105,22 @@ class PlayerViewModel @Inject constructor(
     fun playSong(song: Song, queue: List<Song> = listOf(song)) {
         val mc = mediaController ?: return
         viewModelScope.launch {
+            _playerState.update { it.copy(isBuffering = true, currentSong = song) }
             repository.recordPlay(song)
 
+            // Extract stream URL for the selected song
+            val streamUrl = extractor.extractStreamUrl(song.videoId)
+            if (streamUrl == null) {
+                _playerState.update { it.copy(isBuffering = false) }
+                // Handle error or skip
+                return@launch
+            }
+
             val mediaItems = queue.map { s ->
+                val uri = if (s.id == song.id) streamUrl else "https://www.youtube.com/watch?v=${s.videoId}"
                 MediaItem.Builder()
                     .setMediaId(s.id)
-                    .setUri("https://www.youtube.com/watch?v=${s.videoId}")
+                    .setUri(uri)
                     .setMediaMetadata(
                         MediaMetadata.Builder()
                             .setTitle(s.title)
@@ -125,6 +137,7 @@ class PlayerViewModel @Inject constructor(
             mc.setMediaItems(mediaItems, startIndex, 0L)
             mc.prepare()
             mc.play()
+            _playerState.update { it.copy(isBuffering = false) }
         }
     }
 

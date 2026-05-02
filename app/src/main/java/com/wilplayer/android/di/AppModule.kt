@@ -71,3 +71,12 @@ object DatabaseModule {
     @Provides fun providePlaylistDao(db: WilPlayerDatabase): PlaylistDao = db.playlistDao()
     @Provides fun provideHistoryDao(db: WilPlayerDatabase): HistoryDao = db.historyDao()
 }
+
+@Module
+@InstallIn(SingletonComponent::class)
+object PreferencesModule {
+    @Provides
+    @Singleton
+    fun provideUserPreferences(@ApplicationContext context: Context): com.wilplayer.android.data.preferences.UserPreferences =
+        com.wilplayer.android.data.preferences.UserPreferences(context)
+}

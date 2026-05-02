@@ -137,6 +137,9 @@ dependencies {
     // WorkManager
     implementation(libs.work.runtime.ktx)
 
+    // NewPipe Extractor
+    implementation(libs.newpipe.extractor)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

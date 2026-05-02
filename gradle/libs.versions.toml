@@ -24,6 +24,7 @@ gson = "2.10.1"
 accompanist = "0.34.0"
 workmanager = "2.9.0"
 material = "1.11.0"
+newpipe = "v0.24.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -92,6 +93,7 @@ work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version
 
 # Material Components
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+newpipe-extractor = { group = "com.github.TeamNewPipe", name = "NewPipeExtractor", version.ref = "newpipe" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

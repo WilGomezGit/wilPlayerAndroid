@@ -29,6 +29,7 @@ fun HomeScreen(
     playerVm: PlayerViewModel,
     onNavigateToPlayer: () -> Unit,
     onNavigateToSearch: () -> Unit,
+    onNavigateToPlaylist: (String) -> Unit,
     modifier: Modifier = Modifier,
     vm: HomeViewModel = hiltViewModel(),
 ) {
@@ -57,7 +58,7 @@ fun HomeScreen(
                 QuickAccessGrid(
                     items = uiState.recentPlaylists.take(4),
                     isLoading = uiState.isLoading,
-                    onItemClick = { /* navigate to playlist */ },
+                    onItemClick = onNavigateToPlaylist,
                     modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 20.dp)
                 )
             }

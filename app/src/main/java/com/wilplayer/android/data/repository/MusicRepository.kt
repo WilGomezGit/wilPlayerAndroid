@@ -8,6 +8,7 @@ import com.wilplayer.android.data.model.*
 import com.wilplayer.android.domain.model.*
 import com.wilplayer.android.util.DurationParser
 import com.wilplayer.android.util.SmartShuffleEngine
+import com.wilplayer.android.data.preferences.UserPreferences
 import kotlinx.coroutines.flow.*
 import java.util.UUID
 import javax.inject.Inject
@@ -25,16 +26,24 @@ class MusicRepository @Inject constructor(
     private val songDao: SongDao,
     private val playlistDao: PlaylistDao,
     private val historyDao: HistoryDao,
+    private val userPrefs: UserPreferences,
 ) {
-    private val apiKey get() = BuildConfig.YOUTUBE_API_KEY
+    private suspend fun getApiKey(): String {
+        return userPrefs.apiKey.first() ?: BuildConfig.YOUTUBE_API_KEY
+    }
+
+    private suspend fun getRegionCode(): String {
+        return userPrefs.regionCode.first()
+    }
 
     // ── Search ────────────────────────────────────────────────────────────────
 
     suspend fun search(query: String, pageToken: String? = null): Result<SearchResult> = runCatching {
-        val response = apiService.search(query = query, pageToken = pageToken, apiKey = apiKey)
+        val key = getApiKey()
+        val response = apiService.search(query = query, pageToken = pageToken, apiKey = key)
         val videoIds = response.items.mapNotNull { it.id.videoId }.joinToString(",")
         val details = if (videoIds.isNotBlank()) {
-            apiService.getVideoDetails(videoIds = videoIds, apiKey = apiKey)
+            apiService.getVideoDetails(videoIds = videoIds, apiKey = key)
         } else null
 
         val detailsMap = details?.items?.associateBy { it.id } ?: emptyMap()
@@ -66,8 +75,10 @@ class MusicRepository @Inject constructor(
 
     // ── Trending ──────────────────────────────────────────────────────────────
 
-    suspend fun getTrending(regionCode: String = "CO"): Result<List<Song>> = runCatching {
-        val response = apiService.getTrending(regionCode = regionCode, apiKey = apiKey)
+    suspend fun getTrending(regionCode: String? = null): Result<List<Song>> = runCatching {
+        val key = getApiKey()
+        val region = regionCode ?: getRegionCode()
+        val response = apiService.getTrending(regionCode = region, apiKey = key)
         val songs = response.items.map { item ->
             mapToSong(
                 videoId      = item.id,

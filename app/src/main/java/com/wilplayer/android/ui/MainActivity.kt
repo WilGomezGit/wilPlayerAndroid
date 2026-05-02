@@ -146,6 +146,7 @@ fun WilPlayerApp() {
                     playerVm = playerVm,
                     onNavigateToPlayer = { navController.navigate(Routes.PLAYER) },
                     onNavigateToSearch = { navController.navigate(Routes.SEARCH) },
+                    onNavigateToPlaylist = { id -> navController.navigate(Routes.playlist(id)) },
                 )
             }
 

@@ -1,4 +1,4 @@
-﻿package com.wilplayer.android.ui.screens
+package com.wilplayer.android.ui.screens
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
@@ -23,6 +23,7 @@ import com.wilplayer.android.ui.PlayerViewModel
 import com.wilplayer.android.ui.components.*
 import com.wilplayer.android.ui.theme.*
 import android.media.AudioManager
+import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
 
 enum class PlayerTab { COVER, LYRICS, RELATED }
@@ -34,7 +35,10 @@ fun PlayerScreen(
     modifier: Modifier = Modifier,
 ) {
     val playerState by playerVm.playerState.collectAsStateWithLifecycle()
+    val queue by playerVm.queue.collectAsStateWithLifecycle()
     var activeTab by remember { mutableStateOf(PlayerTab.COVER) }
+    var showQueue by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     val song = playerState.currentSong
 
@@ -114,6 +118,16 @@ fun PlayerScreen(
                     onToggleShuffle = playerVm::toggleShuffle,
                     onToggleRepeat = playerVm::toggleRepeat,
                     onShowLyrics = { activeTab = PlayerTab.LYRICS },
+                    onShowQueue = { showQueue = true },
+                    onShare = {
+                        song?.let {
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, "Escuchando ${it.title} en WilPlayer: ${it.youtubeUrl}")
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Compartir canción"))
+                        }
+                    },
                     modifier = Modifier.weight(1f)
                 )
                 PlayerTab.LYRICS -> LyricsContent(
@@ -127,6 +141,30 @@ fun PlayerScreen(
                     modifier = Modifier.weight(1f)
                 )
                 PlayerTab.RELATED -> Text("Related", color = TextPrimary) // placeholder
+            }
+        }
+
+        // ── Queue Bottom Sheet ────────────────────────────────────────────────
+        if (showQueue) {
+            ModalBottomSheet(
+                onDismissRequest = { showQueue = false },
+                containerColor = Surface2,
+                dragHandle = { BottomSheetDefaults.DragHandle(color = TextTertiary) }
+            ) {
+                Column(modifier = Modifier.fillMaxHeight(0.7f).padding(bottom = 16.dp)) {
+                    Text("Cola de reproducción", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary, modifier = Modifier.padding(16.dp))
+                    LazyColumn {
+                        itemsIndexed(queue) { idx, songItem ->
+                            val isCurrent = playerState.currentSong?.id == songItem.id
+                            SongListItem(
+                                song = songItem,
+                                isPlaying = isCurrent,
+                                paletteIndex = idx,
+                                onClick = { playerVm.playSong(songItem, queue) }
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -146,6 +184,8 @@ private fun ClassicPlayerContent(
     onToggleShuffle: () -> Unit,
     onToggleRepeat: () -> Unit,
     onShowLyrics: () -> Unit,
+    onShowQueue: () -> Unit,
+    onShare: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
@@ -260,7 +300,7 @@ private fun ClassicPlayerContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = {}) {
+            IconButton(onClick = onShowQueue) {
                 Icon(QueueIcon, contentDescription = "Cola", tint = TextTertiary, modifier = Modifier.size(20.dp))
             }
 
@@ -296,7 +336,7 @@ private fun ClassicPlayerContent(
                     )
                 )
             }
-            IconButton(onClick = {}) {
+            IconButton(onClick = onShare) {
                 Icon(ShareIcon, contentDescription = "Compartir", tint = TextTertiary, modifier = Modifier.size(20.dp))
             }
         }
