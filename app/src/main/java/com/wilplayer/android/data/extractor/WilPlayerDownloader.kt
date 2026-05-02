@@ -26,7 +26,7 @@ class WilPlayerDownloader private constructor() : Downloader() {
             response.code,
             response.message,
             response.headers.toMultimap(),
-            body,
+            body ?: "",
             response.request.url.toString()
         )
     }
