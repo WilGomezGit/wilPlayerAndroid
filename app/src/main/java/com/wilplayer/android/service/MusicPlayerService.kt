@@ -15,64 +15,74 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MusicPlayerService : MediaSessionService() {
 
-    private var mediaSession: MediaSession? = null
-    private lateinit var player: ExoPlayer
+        private var mediaSession: MediaSession? = null
+        private lateinit var player: ExoPlayer
 
-    override fun onCreate() {
-        super.onCreate()
-        player = ExoPlayer.Builder(this)
-            .setHandleAudioBecomingNoisy(true)   // auto-pause on headphone unplug
-            .setWakeMode(C.WAKE_MODE_NETWORK)    // keep CPU + network alive during playback
-            .build()
+        override fun onCreate() {
+                    super.onCreate()
+                            player = ExoPlayer.Builder(this)
+                                        .setHandleAudioBecomingNoisy(true)   // auto-pause on headphone unplug
+                                                    .setWakeMode(C.WAKE_MODE_NETWORK)    // keep CPU + network alive during playback
+                                                                .setAudioAttributes(                  // enable Bluetooth & audio focus
+                                                                                    AudioAttributes.Builder()
+                                                                                                        .setUsage(C.USAGE_MEDIA)
+                                                                                                                            .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                                                                                                                                                .build(),
+                                                                                    /* handleAudioFocus = */ true
+                                                                                )
+                                                                            .build()
 
-        mediaSession = MediaSession.Builder(this, player)
-            .setCallback(WilMediaSessionCallback())
-            .build()
-    }
-
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
-        mediaSession
-
-    override fun onTaskRemoved(rootIntent: Intent?) {
-        val player = mediaSession?.player ?: return
-        if (!player.playWhenReady || player.mediaItemCount == 0) {
-            stopSelf()
+                                                                                    mediaSession = MediaSession.Builder(this, player)
+                                                                                                .setCallback(WilMediaSessionCallback())
+                                                                                                            .build()
         }
-    }
 
-    override fun onDestroy() {
-        mediaSession?.run {
-            player.release()
-            release()
-            mediaSession = null
+            override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
+            mediaSession
+
+        override fun onTaskRemoved(rootIntent: Intent?) {
+                    val player = mediaSession?.player ?: return
+                    if (!player.playWhenReady || player.mediaItemCount == 0) {
+                                    stopSelf()
+                    }
         }
-        super.onDestroy()
-    }
 
-    // ── Session callback ───────────────────────────────────────────────────────
-
-    private inner class WilMediaSessionCallback : MediaSession.Callback {
-        override fun onAddMediaItems(
-            mediaSession: MediaSession,
-            controller: MediaSession.ControllerInfo,
-            mediaItems: List<MediaItem>,
-        ): ListenableFuture<List<MediaItem>> {
-            // Resolve URIs before passing to player
-            val resolvedItems = mediaItems.map { item ->
-                item.buildUpon()
-                    .setUri(item.requestMetadata.mediaUri)
-                    .build()
+            override fun onDestroy() {
+                        mediaSession?.run {
+                                        player.release()
+                                                    release()
+                                                                mediaSession = null
+                        }
+                                super.onDestroy()
             }
-            return Futures.immediateFuture(resolvedItems)
-        }
-    }
+
+                // ── Session callback ───────────────────────────────────────────────────────
+
+                    private inner class WilMediaSessionCallback : MediaSession.Callback {
+                                override fun onAddMediaItems(
+                                                mediaSession: MediaSession,
+                                                controller: MediaSession.ControllerInfo,
+                                                mediaItems: List<MediaItem>,
+                                            ): ListenableFuture<List<MediaItem>> {
+                                                // Resolve URIs before passing to player:
+                                                // Use localConfiguration.uri if already set (from setUri()),
+                                                // otherwise fall back to requestMetadata.mediaUri.
+                                                val resolvedItems = mediaItems.map { item ->
+                                                                    val uri = item.localConfiguration?.uri
+                                                                        ?: item.requestMetadata.mediaUri
+                                                                    item.buildUpon()
+                                                                                        .setUri(uri)
+                                                                                                            .build()
+                                                }
+                                                            return Futures.immediateFuture(resolvedItems)
+                                }
+                    }
 }
 
 // ── Boot Receiver ──────────────────────────────────────────────────────────────
 
-
 class BootReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
-        // No auto-start on boot — respect user privacy
-    }
+        override fun onReceive(context: Context, intent: Intent) {
+                    // No auto-start on boot — respect user privacy
+        }
 }
