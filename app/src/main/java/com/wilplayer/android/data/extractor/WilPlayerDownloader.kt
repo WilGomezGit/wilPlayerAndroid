@@ -9,7 +9,8 @@ import okhttp3.OkHttpClient
  * Custom Downloader for NewPipe Extractor using OkHttp
  */
 class WilPlayerDownloader private constructor() : Downloader() {
-    private val client = OkHttpClient.Builder()
+    // Explicit type to avoid Builder vs Client confusion in some compiler versions
+    private val client: OkHttpClient = OkHttpClient.Builder()
         .followRedirects(true)
         .build()
 
