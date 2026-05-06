@@ -170,6 +170,19 @@ class MusicRepository @Inject constructor(
             PlaylistSongCrossRef(playlistId = playlistId, songId = song.id, position = position)
         )
     }
+    // ── Playlist helpers ─────────────────────────────────────────────────────
+
+        /** Devuelve la cantidad de canciones en una playlist (para saber la posición siguiente). */
+        suspend fun getPlaylistSongCount(playlistId: String): Int {
+            return playlistDao.getPlaylistSongCount(playlistId)
+        }
+        
+        /** Crea una playlist nueva y agrega una canción de inmediato. */
+        suspend fun createPlaylistWithSong(name: String, description: String = "", song: Song) {
+            val playlistId = createPlaylist(name, description)
+            // La posición 0 la coloca al principio; puedes cambiarla según necesites.
+            addSongToPlaylist(playlistId, song, position = 0)
+        }
 
     // ── Play History ──────────────────────────────────────────────────────────
 
