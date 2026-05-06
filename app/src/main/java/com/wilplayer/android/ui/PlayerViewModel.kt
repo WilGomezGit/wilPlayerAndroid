@@ -26,8 +26,6 @@ class PlayerViewModel @Inject constructor(
     private val extractor: YoutubeStreamExtractor,
 ) : ViewModel() {
 
-    // ── Player state ──────────────────────────────────────────────────────────
-
     private val _playerState = MutableStateFlow(PlayerState())
     val playerState: StateFlow<PlayerState> = _playerState.asStateFlow()
 
@@ -36,11 +34,14 @@ class PlayerViewModel @Inject constructor(
 
     private var mediaController: MediaController? = null
     private var progressJob: Job? = null
-
-    /** Buffered play request that arrived before the MediaController was ready. */
     private var pendingPlay: Pair<Song, List<Song>>? = null
 
-    // ── Connect to MediaSession ────────────────────────────────────────────────
+    // ── Playlist dialog state ─────────────────────────────────────────────────
+    private val _allPlaylists = MutableStateFlow<List<Playlist>>(emptyList())
+    val allPlaylists: StateFlow<List<Playlist>> = _allPlaylists.asStateFlow()
+
+    private val _showAddToPlaylistDialog = MutableStateFlow<Song?>(null)
+    val showAddToPlaylistDialog: StateFlow<Song?> = _showAddToPlaylistDialog.asStateFlow()
 
     fun connectPlayer() {
         val sessionToken = SessionToken(
@@ -53,7 +54,7 @@ class PlayerViewModel @Inject constructor(
                 mediaController = controllerFuture.get()
                 setupPlayerListener()
                 startProgressPolling()
-                // Play any song the user tapped before the connection was ready
+                loadAllPlaylists()
                 pendingPlay?.let { (song, q) ->
                     pendingPlay = null
                     playSong(song, q)
@@ -75,7 +76,6 @@ class PlayerViewModel @Inject constructor(
             override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) = updateState()
             override fun onRepeatModeChanged(repeatMode: Int) = updateState()
             override fun onPlayerError(error: PlaybackException) {
-                // Invalidate the cached stream URL so the next attempt re-extracts
                 val failedVideoId = _playerState.value.currentSong?.videoId
                 if (failedVideoId != null) extractor.invalidate(failedVideoId)
                 _playerState.update { it.copy(errorMessage = "Error al reproducir. Saltando...") }
@@ -118,12 +118,9 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    // ── Playback commands ─────────────────────────────────────────────────────
-
     fun playSong(song: Song, queue: List<Song> = listOf(song)) {
         val mc = mediaController
         if (mc == null) {
-            // Controller not ready yet — store and replay once connected
             pendingPlay = song to queue
             _playerState.update { it.copy(isBuffering = true, currentSong = song, errorMessage = null) }
             return
@@ -133,30 +130,27 @@ class PlayerViewModel @Inject constructor(
             _playerState.update { it.copy(isBuffering = true, currentSong = song, errorMessage = null) }
             repository.recordPlay(song)
 
-            // Resolve the current song's stream URL; others get placeholder YouTube URLs
-            // which the MusicPlayerService resolves proactively before they are needed.
             val streamUrl = try {
-             extractor.extractStreamUrl(song.videoId)
-                } catch (e: Exception) {
-                    // Muestra el error real en la UI
-                    _playerState.update {
-                        it.copy(
-                            isBuffering = false,
-                            errorMessage = "Error: ${e.message ?: "desconocido"}"
-                        )
-                    }
-                    return@launch
+                extractor.extractStreamUrl(song.videoId)
+            } catch (e: Exception) {
+                _playerState.update {
+                    it.copy(
+                        isBuffering = false,
+                        errorMessage = "Error: ${e.message ?: "desconocido"}"
+                    )
                 }
-                
-                if (streamUrl == null) {
-                    _playerState.update {
-                        it.copy(
-                            isBuffering = false,
-                            errorMessage = "No se pudo obtener el stream (URL nula)."
-                        )
-                    }
-                    return@launch
+                return@launch
+            }
+
+            if (streamUrl == null) {
+                _playerState.update {
+                    it.copy(
+                        isBuffering = false,
+                        errorMessage = "No se pudo obtener el stream (URL nula)."
+                    )
                 }
+                return@launch
+            }
 
             val mediaItems = queue.map { s ->
                 val uri = if (s.id == song.id) streamUrl
@@ -236,9 +230,7 @@ class PlayerViewModel @Inject constructor(
     private fun enableSmartShuffle() {
         viewModelScope.launch {
             val mc = mediaController ?: return@launch
-            val currentQueue = _queue.value
-
-            if (currentQueue.isEmpty()) return@launch
+            if (_queue.value.isEmpty()) return@launch
 
             mc.shuffleModeEnabled = true
             _playerState.update { it.copy(shuffleMode = ShuffleMode.SMART) }
@@ -248,7 +240,6 @@ class PlayerViewModel @Inject constructor(
     fun toggleLike(song: Song) {
         viewModelScope.launch {
             val newLiked = repository.toggleLike(song)
-            // Update the song in the queue list too
             _queue.update { list ->
                 list.map { if (it.id == song.id) it.copy(isLiked = newLiked) else it }
             }
@@ -258,10 +249,6 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Adds a song to the end of the current queue without interrupting playback.
-     * The MusicPlayerService will resolve the stream URL before the track is needed.
-     */
     fun addToQueue(song: Song) {
         val mc = mediaController ?: return
         val mediaItem = MediaItem.Builder()
@@ -279,7 +266,37 @@ class PlayerViewModel @Inject constructor(
         _queue.update { it + song }
     }
 
-    /** Clears the error message after it has been shown to the user. */
+    // ── Playlist functions ────────────────────────────────────────────────────
+
+    fun loadAllPlaylists() {
+        viewModelScope.launch {
+            _allPlaylists.value = repository.getAllPlaylists()
+        }
+    }
+
+    fun onAddToPlaylistRequest(song: Song) {
+        loadAllPlaylists()
+        _showAddToPlaylistDialog.value = song
+    }
+
+    fun onDismissAddToPlaylistDialog() {
+        _showAddToPlaylistDialog.value = null
+    }
+
+    fun addToPlaylist(playlist: Playlist, song: Song) {
+        viewModelScope.launch {
+            repository.addSongToPlaylist(playlist, song)
+            _showAddToPlaylistDialog.value = null
+        }
+    }
+
+    fun addToNewPlaylist(playlistName: String, song: Song) {
+        viewModelScope.launch {
+            repository.createPlaylistWithSong(playlistName, song)
+            _showAddToPlaylistDialog.value = null
+        }
+    }
+
     fun clearError() {
         _playerState.update { it.copy(errorMessage = null) }
     }
