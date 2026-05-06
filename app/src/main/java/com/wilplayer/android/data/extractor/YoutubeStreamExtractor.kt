@@ -7,7 +7,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.schabi.newpipe.extractor.NewPipe
 import org.schabi.newpipe.extractor.ServiceList
-import org.schabi.newpipe.extractor.downloader.DownloaderImpl
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,7 +29,7 @@ class YoutubeStreamExtractor @Inject constructor(
 
     private fun ensureInitialized() {
         if (!isInitialized) {
-            NewPipe.init(DownloaderImpl.init(null))
+            NewPipe.init(WilPlayerDownloader.getInstance())
             isInitialized = true
         }
     }
