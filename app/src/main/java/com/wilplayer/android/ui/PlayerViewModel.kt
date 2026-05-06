@@ -268,31 +268,40 @@ class PlayerViewModel @Inject constructor(
 
     // ── Playlist functions ────────────────────────────────────────────────────
 
+    /** Carga todas las playlists desde el repositorio (devuelve un Flow). */
     fun loadAllPlaylists() {
         viewModelScope.launch {
-            _allPlaylists.value = repository.getAllPlaylists()
+            repository.getAllPlaylists().collect { playlists ->
+                _allPlaylists.value = playlists
+            }
         }
     }
 
+    /** Prepara el diálogo para agregar una canción a una playlist. */
     fun onAddToPlaylistRequest(song: Song) {
         loadAllPlaylists()
         _showAddToPlaylistDialog.value = song
     }
 
+    /** Cierra el diálogo de selección de playlist. */
     fun onDismissAddToPlaylistDialog() {
         _showAddToPlaylistDialog.value = null
     }
 
+    /** Agrega la canción a una playlist existente. */
     fun addToPlaylist(playlist: Playlist, song: Song) {
         viewModelScope.launch {
-            repository.addSongToPlaylist(playlist, song)
+            // Obtenemos la siguiente posición según el número de canciones actuales
+            val position = repository.getPlaylistSongCount(playlist.id) + 1
+            repository.addSongToPlaylist(playlist.id, song, position)
             _showAddToPlaylistDialog.value = null
         }
     }
 
+    /** Crea una nueva playlist y agrega la canción. */
     fun addToNewPlaylist(playlistName: String, song: Song) {
         viewModelScope.launch {
-            repository.createPlaylistWithSong(playlistName, song)
+            repository.createPlaylistWithSong(playlistName, song = song)
             _showAddToPlaylistDialog.value = null
         }
     }
