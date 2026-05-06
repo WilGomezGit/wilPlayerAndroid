@@ -313,12 +313,12 @@ class PlayerViewModel @Inject constructor(
         _showAddToPlaylistDialog.value = null
     }
 
-    fun addToPlaylist(playlist: Playlist, song: Song) {
+       fun addToPlaylist(playlist: Playlist, song: Song) {
         viewModelScope.launch {
             val position = repository.getPlaylistSongCount(playlist.id) + 1
             repository.addSongToPlaylist(playlist.id, song, position)
             _showAddToPlaylistDialog.value = null
-            }
+        }
     }
 
     fun addToNewPlaylist(playlistName: String, song: Song) {
