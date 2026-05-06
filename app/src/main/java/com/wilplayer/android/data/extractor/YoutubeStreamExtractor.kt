@@ -1,6 +1,7 @@
 package com.wilplayer.android.data.extractor
 
 import android.content.Context
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -51,10 +52,9 @@ class YoutubeStreamExtractor @Inject constructor(
             audioStream?.content?.also { streamUrl ->
                 urlCache[videoId] = CachedUrl(streamUrl)
             }
-        } } catch (e: Exception) {
+        } catch (e: Exception) {
             Log.e("YtExtractor", "Error for $videoId", e)
             throw e
-            }
         }
     }
 
