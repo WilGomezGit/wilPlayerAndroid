@@ -36,10 +36,6 @@ import androidx.compose.material.icons.outlined.*
 
 // ── CoverArt ─────────────────────────────────────────────────────────────────
 
-/**
- * Displays song thumbnail if available, else falls back to
- * the gradient palette from the design.
- */
 @Composable
 fun CoverArt(
     song: Song?,
@@ -153,7 +149,7 @@ fun PlayPauseButton(
     }
 }
 
-// ── ControlButton (small icon buttons) ───────────────────────────────────────
+// ── ControlButton (small icon buttons) ─────────────────────────────────────
 
 @Composable
 fun ControlButton(
@@ -322,8 +318,7 @@ fun ErrorState(
 // ── Song Options Bottom Sheet ─────────────────────────────────────────────────
 
 /**
- * Reusable bottom sheet with Like, Add-to-queue, and Share actions for a song.
- * Place it outside any LazyColumn to avoid nested scrolling issues.
+ * Reusable bottom sheet with Like, Add-to-queue, Add-to-playlist, and Share actions.
  */
 @Composable
 fun SongOptionsSheet(
@@ -331,6 +326,7 @@ fun SongOptionsSheet(
     onDismiss: () -> Unit,
     onToggleLike: () -> Unit,
     onAddToQueue: () -> Unit,
+    onAddToPlaylist: () -> Unit = {},   // ← nuevo callback
 ) {
     val context = LocalContext.current
     ModalBottomSheet(
@@ -373,6 +369,12 @@ fun SongOptionsSheet(
                 label = "Agregar a la cola",
                 onClick = { onAddToQueue(); onDismiss() }
             )
+            // Add to playlist
+            OptionsRow(
+                icon = LibraryIcon,
+                label = "Agregar a playlist",
+                onClick = { onAddToPlaylist(); onDismiss() }
+            )
             // Share
             OptionsRow(
                 icon = ShareIcon,
@@ -414,7 +416,6 @@ private fun OptionsRow(
 }
 
 // ── Icon aliases (centralized) ─────────────────────────────────────────────────
-
 
 val PlayIcon      get() = Icons.Filled.PlayArrow
 val PauseIcon     get() = Icons.Filled.Pause
