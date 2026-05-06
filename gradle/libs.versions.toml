@@ -23,7 +23,7 @@ kotlinxSerialization = "1.6.3"
 gson = "2.10.1"
 workmanager = "2.9.0"
 material = "1.11.0"
-newpipe = "v0.28.2"
+newpipe = "v0.25.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
