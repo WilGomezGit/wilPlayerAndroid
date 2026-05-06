@@ -6,6 +6,10 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.Text
+import androidx.compose.material.TextButton
+import androidx.compose.material.OutlinedTextField
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -110,7 +114,74 @@ fun SearchScreen(
             onDismiss = { optionsSong = null },
             onToggleLike = { playerVm.toggleLike(song) },
             onAddToQueue = { playerVm.addToQueue(song) },
+            onAddToPlaylist = { playerVm.onAddToPlaylistRequest(song) }
         )
+    }
+
+    // ── Add to playlist dialog ────────────────────────────────────────────────
+    val playlists by playerVm.allPlaylists.collectAsStateWithLifecycle()
+    val songToAddToPlaylist by playerVm.showAddToPlaylistDialog.collectAsStateWithLifecycle()
+
+    songToAddToPlaylist?.let { song ->
+        var showNewPlaylistDialog by remember { mutableStateOf(false) }
+        var newPlaylistName by remember { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = { playerVm.onDismissAddToPlaylistDialog() },
+            title = { Text("Seleccionar Playlist") },
+            text = {
+                if (playlists.isEmpty()) {
+                    Text("No tienes playlists. Crea una nueva.")
+                } else {
+                    LazyColumn {
+                        items(playlists) { playlist ->
+                            TextButton(onClick = { playerVm.addToPlaylist(playlist, song) }) {
+                                Text(playlist.name)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showNewPlaylistDialog = true }) {
+                    Text("Nueva Playlist")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { playerVm.onDismissAddToPlaylistDialog() }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+
+        if (showNewPlaylistDialog) {
+            AlertDialog(
+                onDismissRequest = { showNewPlaylistDialog = false },
+                title = { Text("Nombre de la Playlist") },
+                text = {
+                    OutlinedTextField(
+                        value = newPlaylistName,
+                        onValueChange = { newPlaylistName = it },
+                        label = { Text("Nombre") }
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (newPlaylistName.isNotBlank()) {
+                            playerVm.addToNewPlaylist(newPlaylistName, song)
+                            showNewPlaylistDialog = false
+                        }
+                    }) {
+                        Text("Crear")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showNewPlaylistDialog = false }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
     }
 }
 
