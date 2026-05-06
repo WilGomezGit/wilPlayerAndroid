@@ -59,7 +59,11 @@ class PlayerViewModel @Inject constructor(
             override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) = updateState()
             override fun onRepeatModeChanged(repeatMode: Int) = updateState()
             override fun onPlayerError(error: PlaybackException) {
-                // Auto-skip on error
+                // Invalidate cached stream URL for the failed song so the next
+                // attempt re-extracts a fresh URL rather than reusing an expired one.
+                val failedVideoId = _playerState.value.currentSong?.videoId
+                if (failedVideoId != null) extractor.invalidate(failedVideoId)
+                // Auto-skip to next track
                 skipToNext()
             }
         })

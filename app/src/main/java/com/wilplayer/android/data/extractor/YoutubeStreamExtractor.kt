@@ -10,11 +10,21 @@ import org.schabi.newpipe.extractor.stream.StreamInfo
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val CACHE_TTL_MS = 45 * 60 * 1_000L   // YouTube stream URLs expire ~1h; use 45 min
+
+/** Holds a resolved stream URL together with the timestamp it was fetched. */
+private data class CachedUrl(val url: String, val fetchedAt: Long = System.currentTimeMillis()) {
+    fun isExpired() = System.currentTimeMillis() - fetchedAt > CACHE_TTL_MS
+}
+
 @Singleton
 class YoutubeStreamExtractor @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private var isInitialized = false
+
+    // In-memory cache: videoId → resolved stream URL (with TTL)
+    private val urlCache = HashMap<String, CachedUrl>()
 
     private fun ensureInitialized() {
         if (!isInitialized) {
@@ -24,22 +34,31 @@ class YoutubeStreamExtractor @Inject constructor(
     }
 
     suspend fun extractStreamUrl(videoId: String): String? = withContext(Dispatchers.IO) {
+        // Return cached URL if still valid
+        urlCache[videoId]?.takeUnless { it.isExpired() }?.let { return@withContext it.url }
+
         ensureInitialized()
         try {
-            val service = ServiceList.YouTube
             val url = "https://www.youtube.com/watch?v=$videoId"
-            val streamInfo = StreamInfo.getInfo(service, url)
-            
-            // Get the best audio stream (m4a preferred for ExoPlayer)
+            val streamInfo = StreamInfo.getInfo(ServiceList.YouTube, url)
+
+            // Prefer M4A (AAC) — best ExoPlayer compatibility; fall back to highest bitrate
             val audioStream = streamInfo.audioStreams
                 .filter { it.format.name.lowercase().contains("m4a") }
                 .maxByOrNull { it.bitrate }
                 ?: streamInfo.audioStreams.maxByOrNull { it.bitrate }
 
-            audioStream?.content
+            audioStream?.content?.also { streamUrl ->
+                urlCache[videoId] = CachedUrl(streamUrl)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             null
         }
+    }
+
+    /** Removes a cached entry so the next call re-extracts (useful on playback error). */
+    fun invalidate(videoId: String) {
+        urlCache.remove(videoId)
     }
 }
