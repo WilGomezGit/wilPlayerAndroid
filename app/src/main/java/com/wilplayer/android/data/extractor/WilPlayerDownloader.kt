@@ -8,29 +8,25 @@ import org.schabi.newpipe.extractor.downloader.Downloader
 import org.schabi.newpipe.extractor.downloader.Request
 import org.schabi.newpipe.extractor.downloader.Response
 
-/**
- * Custom Downloader for NewPipe Extractor using OkHttp.
- *
- * Critical fix: OkHttp requires a non-null RequestBody for POST/PUT/PATCH methods.
- * Passing null crashes with "method POST must have a request body". We now
- * use request.dataToSend() as the body for those methods.
- */
 class WilPlayerDownloader private constructor() : Downloader() {
 
     private val client: OkHttpClient = OkHttpClient.Builder()
         .followRedirects(true)
+        .addInterceptor { chain ->
+            val request = chain.request().newBuilder()
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .header("Accept-Language", "en-US,en;q=0.9")
+                .build()
+            chain.proceed(request)
+        }
         .build()
 
     override fun execute(request: Request): Response {
-        // Build the request body.
-        // For GET requests dataToSend() returns null → requestBody is null → fine.
-        // For POST requests dataToSend() has content → must pass non-null body to OkHttp.
         val bodyBytes = request.dataToSend()
         val requestBody = when {
             bodyBytes != null ->
                 bodyBytes.toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
             request.httpMethod() in listOf("POST", "PUT", "PATCH") ->
-                // Safety: OkHttp rejects null body on these methods even without content.
                 ByteArray(0).toRequestBody("application/x-www-form-urlencoded".toMediaTypeOrNull())
             else -> null
         }
