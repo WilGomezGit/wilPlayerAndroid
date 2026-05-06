@@ -328,15 +328,13 @@ private fun HorizontalSongRows(
 // ── Mood Row ──────────────────────────────────────────────────────────────────
 
 @Composable
-private fun MoodRow(onMoodClick: (String) -> Unit) {
     val moods = listOf(
-        Triple("Chill", 0, "Chill"),
-        Triple("Enfocado", 3, "focus lo-fi"),
-        Triple("Energía", 5, "energetic workout"),
-        Triple("Melancólico", 4, "sad songs"),
-        Triple("Feliz", 6, "happy pop"),
+        Triple("🤘 Clásicos", 0, "classic rock"),
+        Triple("🎸 Hard Rock", 1, "hard rock hits"),
+        Triple("💀 Metal", 2, "heavy metal"),
+        Triple("🎤 Alternativo", 3, "alternative rock"),
+        Triple("🎵 Indie Rock", 4, "indie rock playlist"),
     )
-
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
