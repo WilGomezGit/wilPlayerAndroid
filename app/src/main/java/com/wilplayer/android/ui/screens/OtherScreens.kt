@@ -108,7 +108,20 @@ fun PlaylistDetailScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
-            ) {
+            ) 
+            
+            // Add songs button
+TextButton(onClick = onNavigateToSearch) {
+    Icon(
+        imageVector = AddIcon,
+        contentDescription = "Añadir canciones",
+        tint = AccentPurple,
+        modifier = Modifier.size(18.dp)
+    )
+    Spacer(modifier = Modifier.width(4.dp))
+    Text("Añadir canciones", color = AccentPurple, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+}
+            {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     // Share playlist
                     IconButton(onClick = {
