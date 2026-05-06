@@ -170,6 +170,11 @@ class MusicRepository @Inject constructor(
             PlaylistSongCrossRef(playlistId = playlistId, songId = song.id, position = position)
         )
     }
+
+    suspend fun getPlaylistSongCount(playlistId: String): Int {
+            return playlistDao.getPlaylistSongCount(playlistId)
+            }
+    
     // ── Playlist helpers ─────────────────────────────────────────────────────
 
         /** Devuelve la cantidad de canciones en una playlist (para saber la posición siguiente). */
