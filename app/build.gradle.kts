@@ -77,6 +77,12 @@ kapt {
     correctErrorTypes = true
 }
 
+// Prevent duplicate-class conflict between standalone `listenablefuture` artifact
+// and the full `guava` jar that comes in transitively via media3-session / Hilt.
+configurations.all {
+    exclude(group = "com.google.guava", module = "listenablefuture")
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -131,9 +137,6 @@ dependencies {
 
     // Gson
     implementation(libs.gson)
-
-    // Accompanist
-    implementation(libs.accompanist.systemuicontroller)
 
     // WorkManager
     implementation(libs.work.runtime.ktx)

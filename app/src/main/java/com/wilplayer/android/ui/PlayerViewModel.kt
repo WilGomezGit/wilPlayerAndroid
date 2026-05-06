@@ -12,7 +12,6 @@ import com.wilplayer.android.data.repository.MusicRepository
 import com.wilplayer.android.domain.model.*
 import com.wilplayer.android.service.MusicPlayerService
 import com.wilplayer.android.data.extractor.YoutubeStreamExtractor
-import com.wilplayer.android.util.DurationParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
