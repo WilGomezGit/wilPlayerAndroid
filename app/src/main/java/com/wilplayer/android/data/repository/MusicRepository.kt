@@ -96,6 +96,16 @@ class MusicRepository @Inject constructor(
         onFailure = { Result.Error(it) }
     )
 
+    // ── All Songs ─────────────────────────────────────────────────────────────
+
+    fun getAllSongs(): Flow<List<Song>> =
+        songDao.getAllSongs().map { list -> list.map { it.toDomain() } }
+
+    fun getArtists(): Flow<List<String>> =
+        songDao.getAllSongs().map { list ->
+            list.map { it.artist }.distinct().filter { it.isNotBlank() }.sorted()
+        }
+
     // ── Liked Songs ───────────────────────────────────────────────────────────
 
     fun getLikedSongs(): Flow<List<Song>> =

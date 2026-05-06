@@ -61,4 +61,9 @@ class YoutubeStreamExtractor @Inject constructor(
     fun invalidate(videoId: String) {
         urlCache.remove(videoId)
     }
+
+    /** Clears the entire stream URL cache. */
+    fun clearCache() {
+        urlCache.clear()
+    }
 }

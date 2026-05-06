@@ -2,6 +2,7 @@ package com.wilplayer.android.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wilplayer.android.data.extractor.YoutubeStreamExtractor
 import com.wilplayer.android.data.preferences.UserPreferences
 import com.wilplayer.android.data.repository.MusicRepository
 import com.wilplayer.android.data.repository.Result
@@ -14,6 +15,7 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     private val userPrefs: UserPreferences,
     private val repository: MusicRepository,
+    private val extractor: YoutubeStreamExtractor,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -25,14 +27,18 @@ class ProfileViewModel @Inject constructor(
                 userPrefs.apiKey,
                 userPrefs.shuffleQuality,
                 userPrefs.regionCode,
-                repository.getAllPlaylists()
-            ) { key, quality, region, playlists ->
-                _uiState.update { it.copy(
-                    apiKey = key ?: "",
-                    shuffleQuality = quality,
-                    regionCode = region,
-                    playlistCount = playlists.size
-                ) }
+                repository.getAllPlaylists(),
+                repository.getAllSongs(),
+            ) { key, quality, region, playlists, songs ->
+                _uiState.update {
+                    it.copy(
+                        apiKey = key ?: "",
+                        shuffleQuality = quality,
+                        regionCode = region,
+                        playlistCount = playlists.size,
+                        songCount = songs.size,
+                    )
+                }
             }.collect()
         }
     }
@@ -60,5 +66,10 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             userPrefs.saveShuffleQuality(quality)
         }
+    }
+
+    /** Clears the in-memory stream URL cache so the next play re-extracts fresh URLs. */
+    fun clearStreamCache() {
+        extractor.clearCache()
     }
 }

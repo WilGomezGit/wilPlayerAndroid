@@ -2,16 +2,17 @@ package com.wilplayer.android.ui
 
 import android.content.ComponentName
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.*
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
+import com.wilplayer.android.data.extractor.YoutubeStreamExtractor
 import com.wilplayer.android.data.repository.MusicRepository
 import com.wilplayer.android.domain.model.*
 import com.wilplayer.android.service.MusicPlayerService
-import com.wilplayer.android.data.extractor.YoutubeStreamExtractor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
@@ -36,6 +37,9 @@ class PlayerViewModel @Inject constructor(
     private var mediaController: MediaController? = null
     private var progressJob: Job? = null
 
+    /** Buffered play request that arrived before the MediaController was ready. */
+    private var pendingPlay: Pair<Song, List<Song>>? = null
+
     // ── Connect to MediaSession ────────────────────────────────────────────────
 
     fun connectPlayer() {
@@ -45,9 +49,21 @@ class PlayerViewModel @Inject constructor(
         )
         val controllerFuture = MediaController.Builder(context, sessionToken).buildAsync()
         controllerFuture.addListener({
-            mediaController = controllerFuture.get()
-            setupPlayerListener()
-            startProgressPolling()
+            try {
+                mediaController = controllerFuture.get()
+                setupPlayerListener()
+                startProgressPolling()
+                // Play any song the user tapped before the connection was ready
+                pendingPlay?.let { (song, q) ->
+                    pendingPlay = null
+                    playSong(song, q)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _playerState.update {
+                    it.copy(isBuffering = false, errorMessage = "No se pudo conectar al reproductor")
+                }
+            }
         }, MoreExecutors.directExecutor())
     }
 
@@ -59,11 +75,10 @@ class PlayerViewModel @Inject constructor(
             override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) = updateState()
             override fun onRepeatModeChanged(repeatMode: Int) = updateState()
             override fun onPlayerError(error: PlaybackException) {
-                // Invalidate cached stream URL for the failed song so the next
-                // attempt re-extracts a fresh URL rather than reusing an expired one.
+                // Invalidate the cached stream URL so the next attempt re-extracts
                 val failedVideoId = _playerState.value.currentSong?.videoId
                 if (failedVideoId != null) extractor.invalidate(failedVideoId)
-                // Auto-skip to next track
+                _playerState.update { it.copy(errorMessage = "Error al reproducir. Saltando...") }
                 skipToNext()
             }
         })
@@ -106,29 +121,39 @@ class PlayerViewModel @Inject constructor(
     // ── Playback commands ─────────────────────────────────────────────────────
 
     fun playSong(song: Song, queue: List<Song> = listOf(song)) {
-        val mc = mediaController ?: return
+        val mc = mediaController
+        if (mc == null) {
+            // Controller not ready yet — store and replay once connected
+            pendingPlay = song to queue
+            _playerState.update { it.copy(isBuffering = true, currentSong = song, errorMessage = null) }
+            return
+        }
+
         viewModelScope.launch {
-            _playerState.update { it.copy(isBuffering = true, currentSong = song) }
+            _playerState.update { it.copy(isBuffering = true, currentSong = song, errorMessage = null) }
             repository.recordPlay(song)
 
-            // Extract stream URL for the selected song
+            // Resolve the current song's stream URL; others get placeholder YouTube URLs
+            // which the MusicPlayerService resolves proactively before they are needed.
             val streamUrl = extractor.extractStreamUrl(song.videoId)
             if (streamUrl == null) {
-                _playerState.update { it.copy(isBuffering = false) }
-                // Handle error or skip
+                _playerState.update {
+                    it.copy(isBuffering = false, errorMessage = "No se pudo obtener el stream. Verifica tu conexión.")
+                }
                 return@launch
             }
 
             val mediaItems = queue.map { s ->
-                val uri = if (s.id == song.id) streamUrl else "https://www.youtube.com/watch?v=${s.videoId}"
+                val uri = if (s.id == song.id) streamUrl
+                          else "https://www.youtube.com/watch?v=${s.videoId}"
                 MediaItem.Builder()
                     .setMediaId(s.id)
-                    .setUri(uri)
+                    .setUri(Uri.parse(uri))
                     .setMediaMetadata(
                         MediaMetadata.Builder()
                             .setTitle(s.title)
                             .setArtist(s.artist)
-                            .setArtworkUri(android.net.Uri.parse(s.thumbnailUrl))
+                            .setArtworkUri(Uri.parse(s.thumbnailUrl))
                             .build()
                     )
                     .build()
@@ -186,10 +211,6 @@ class PlayerViewModel @Inject constructor(
         val currentMode = _playerState.value.shuffleMode
         when (currentMode) {
             ShuffleMode.OFF -> enableSmartShuffle()
-            ShuffleMode.SMART -> {
-                mc.shuffleModeEnabled = false
-                _playerState.update { it.copy(shuffleMode = ShuffleMode.OFF) }
-            }
             else -> {
                 mc.shuffleModeEnabled = false
                 _playerState.update { it.copy(shuffleMode = ShuffleMode.OFF) }
@@ -208,11 +229,12 @@ class PlayerViewModel @Inject constructor(
             val mediaItems = smartQueue.map { s ->
                 MediaItem.Builder()
                     .setMediaId(s.id)
-                    .setUri("https://www.youtube.com/watch?v=${s.videoId}")
+                    .setUri(Uri.parse("https://www.youtube.com/watch?v=${s.videoId}"))
                     .setMediaMetadata(
                         MediaMetadata.Builder()
                             .setTitle(s.title)
                             .setArtist(s.artist)
+                            .setArtworkUri(Uri.parse(s.thumbnailUrl))
                             .build()
                     )
                     .build()
@@ -233,10 +255,40 @@ class PlayerViewModel @Inject constructor(
     fun toggleLike(song: Song) {
         viewModelScope.launch {
             val newLiked = repository.toggleLike(song)
+            // Update the song in the queue list too
+            _queue.update { list ->
+                list.map { if (it.id == song.id) it.copy(isLiked = newLiked) else it }
+            }
             if (_playerState.value.currentSong?.id == song.id) {
                 _playerState.update { it.copy(currentSong = song.copy(isLiked = newLiked)) }
             }
         }
+    }
+
+    /**
+     * Adds a song to the end of the current queue without interrupting playback.
+     * The MusicPlayerService will resolve the stream URL before the track is needed.
+     */
+    fun addToQueue(song: Song) {
+        val mc = mediaController ?: return
+        val mediaItem = MediaItem.Builder()
+            .setMediaId(song.id)
+            .setUri(Uri.parse("https://www.youtube.com/watch?v=${song.videoId}"))
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(song.title)
+                    .setArtist(song.artist)
+                    .setArtworkUri(Uri.parse(song.thumbnailUrl))
+                    .build()
+            )
+            .build()
+        mc.addMediaItem(mediaItem)
+        _queue.update { it + song }
+    }
+
+    /** Clears the error message after it has been shown to the user. */
+    fun clearError() {
+        _playerState.update { it.copy(errorMessage = null) }
     }
 
     private fun findSongByMediaId(mediaId: String?): Song? {

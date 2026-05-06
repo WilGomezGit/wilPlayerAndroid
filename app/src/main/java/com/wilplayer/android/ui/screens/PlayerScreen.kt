@@ -2,6 +2,8 @@ package com.wilplayer.android.ui.screens
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -25,6 +27,7 @@ import com.wilplayer.android.ui.theme.*
 import android.media.AudioManager
 import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 
 enum class PlayerTab { COVER, LYRICS, RELATED }
 
@@ -38,12 +41,35 @@ fun PlayerScreen(
     val queue by playerVm.queue.collectAsStateWithLifecycle()
     var activeTab by remember { mutableStateOf(PlayerTab.COVER) }
     var showQueue by remember { mutableStateOf(false) }
+    var showOptions by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val song = playerState.currentSong
 
+    // Show error messages (stream extraction failures, etc.) as a Snackbar
+    LaunchedEffect(playerState.errorMessage) {
+        playerState.errorMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            playerVm.clearError()
+        }
+    }
+
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        containerColor = Color.Transparent,
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = Surface2,
+                    contentColor = TextPrimary,
+                )
+            }
+        }
+    ) { _ ->
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
@@ -96,7 +122,7 @@ fun PlayerScreen(
                         color = TextPrimary
                     )
                 }
-                IconButton(onClick = {}) {
+                IconButton(onClick = { if (song != null) showOptions = true }) {
                     Icon(MoreVertIcon, contentDescription = "Opciones", tint = TextSecondary, modifier = Modifier.size(22.dp))
                 }
             }
@@ -160,14 +186,29 @@ fun PlayerScreen(
                                 song = songItem,
                                 isPlaying = isCurrent,
                                 paletteIndex = idx,
-                                onClick = { playerVm.playSong(songItem, queue) }
+                                onClick = { playerVm.playSong(songItem, queue) },
+                                onMoreClick = {
+                                    showQueue = false
+                                    showOptions = true
+                                }
                             )
                         }
                     }
                 }
             }
         }
+
+        // ── Song options sheet for current song ───────────────────────────────
+        if (showOptions && song != null) {
+            SongOptionsSheet(
+                song = song,
+                onDismiss = { showOptions = false },
+                onToggleLike = { playerVm.toggleLike(song) },
+                onAddToQueue = { /* already in queue */ },
+            )
+        }
     }
+    } // end Scaffold content
 }
 
 // ── Classic Player Content ────────────────────────────────────────────────────

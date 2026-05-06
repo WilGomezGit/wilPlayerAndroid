@@ -1,5 +1,6 @@
 package com.wilplayer.android.ui.screens
 
+import android.content.Intent
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,8 +48,8 @@ fun PlaylistDetailScreen(
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     val playerState by playerVm.playerState.collectAsStateWithLifecycle()
     val playlist = uiState.playlist
-
-    var isShuffleActive by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    var optionsSong by remember { mutableStateOf<Song?>(null) }
 
     LazyColumn(
         modifier = modifier
@@ -107,14 +109,24 @@ fun PlaylistDetailScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    IconButton(onClick = { /* Toggle library like */ }) {
-                        Icon(HeartBorderIcon, contentDescription = "Me gusta", tint = TextTertiary, modifier = Modifier.size(22.dp))
-                    }
-                    IconButton(onClick = { /* Share playlist */ }) {
+                    // Share playlist
+                    IconButton(onClick = {
+                        val playlistUrl = playlist?.let {
+                            if (it.youtubePlaylistId != null)
+                                "https://www.youtube.com/playlist?list=${it.youtubePlaylistId}"
+                            else it.name
+                        } ?: ""
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, "Escucha «${playlist?.name}» en WilPlayer: $playlistUrl")
+                        }
+                        context.startActivity(Intent.createChooser(intent, "Compartir playlist"))
+                    }) {
                         Icon(ShareIcon, contentDescription = "Compartir", tint = TextTertiary, modifier = Modifier.size(22.dp))
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    // Shuffle button
                     Box(
                         modifier = Modifier
                             .size(36.dp)
@@ -122,7 +134,7 @@ fun PlaylistDetailScreen(
                             .background(Surface2)
                             .border(1.dp, Border2, RoundedCornerShape(18.dp))
                             .clickable {
-                                playlist?.songs?.let { songs ->
+                                playlist?.songs?.takeIf { it.isNotEmpty() }?.let { songs ->
                                     playerVm.playSong(songs.random(), songs)
                                     playerVm.toggleShuffle()
                                     onNavigateToPlayer()
@@ -130,9 +142,14 @@ fun PlaylistDetailScreen(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(ShuffleIcon, contentDescription = "Aleatorio", tint = if (playerState.shuffleMode != com.wilplayer.android.domain.model.ShuffleMode.OFF) AccentPurple else TextSecondary, modifier = Modifier.size(18.dp))
+                        Icon(
+                            ShuffleIcon, contentDescription = "Aleatorio",
+                            tint = if (playerState.shuffleMode != com.wilplayer.android.domain.model.ShuffleMode.OFF) AccentPurple else TextSecondary,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
 
+                    // Play button
                     PlayPauseButton(
                         isPlaying = playerState.isPlaying && playlist?.songs?.any { it.id == playerState.currentSong?.id } == true,
                         onClick = {
@@ -156,10 +173,21 @@ fun PlaylistDetailScreen(
                 onClick = {
                     playerVm.playSong(song, playlist?.songs ?: listOf(song))
                     onNavigateToPlayer()
-                }
+                },
+                onMoreClick = { optionsSong = song }
             )
         }
         item { Spacer(Modifier.height(80.dp)) }
+    }
+
+    // ── Song options sheet ─────────────────────────────────────────────────────
+    optionsSong?.let { song ->
+        SongOptionsSheet(
+            song = song,
+            onDismiss = { optionsSong = null },
+            onToggleLike = { playerVm.toggleLike(song) },
+            onAddToQueue = { playerVm.addToQueue(song) },
+        )
     }
 }
 
@@ -193,7 +221,7 @@ fun ProfileScreen(
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
             StatItem("Canciones", uiState.songCount.toString())
             StatItem("Playlists", uiState.playlistCount.toString())
-            StatItem("Cache", "12MB")
+            StatItem("Calidad", uiState.shuffleQuality)
         }
 
         Spacer(Modifier.height(32.dp))
@@ -212,11 +240,10 @@ fun ProfileScreen(
         Spacer(Modifier.height(32.dp))
     }
 
-    // Settings Dialogs
     when (selectedSetting) {
         "API Key de YouTube" -> ApiKeyDialog(uiState, vm) { selectedSetting = null }
         "Calidad de Smart Shuffle" -> ShuffleQualityDialog(uiState, vm) { selectedSetting = null }
-        "Descargas y Caché" -> CacheDialog { selectedSetting = null }
+        "Descargas y Caché" -> CacheDialog(vm) { selectedSetting = null }
         "Acerca de WilPlayer" -> AboutDialog { selectedSetting = null }
     }
 }
@@ -243,27 +270,38 @@ private fun ApiKeyDialog(state: ProfileUiState, vm: ProfileViewModel, onDismiss:
         title = { Text("API Key de YouTube", color = TextPrimary) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Obtén una clave en Google Cloud Console para habilitar búsquedas y tendencias.", fontSize = 12.sp, color = TextSecondary)
+                Text("Obtén una clave en Google Cloud Console → YouTube Data API v3.", fontSize = 12.sp, color = TextSecondary)
                 OutlinedTextField(
                     value = key,
                     onValueChange = { key = it },
                     placeholder = { Text("AIza...", color = TextTertiary) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary)
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedBorderColor = AccentPurple,
+                        unfocusedBorderColor = Border2,
+                    )
                 )
-                if (state.isCheckingKey == true) CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                else if (state.isApiKeyValid == true) Text("✅ Conexión exitosa", color = Color(0xFF10B981), fontSize = 12.sp)
-                else if (state.isApiKeyValid == false) Text("❌ Clave inválida o sin cuota", color = Color(0xFFEF4444), fontSize = 12.sp)
+                when {
+                    state.isCheckingKey == true ->
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = AccentPurple)
+                    state.isApiKeyValid == true ->
+                        Text("✅ Conexión exitosa", color = Color(0xFF10B981), fontSize = 12.sp)
+                    state.isApiKeyValid == false ->
+                        Text("❌ Clave inválida o sin cuota", color = Color(0xFFEF4444), fontSize = 12.sp)
+                }
             }
         },
         confirmButton = {
             Row {
-                TextButton(onClick = { vm.testApiKey() }) { Text("Probar") }
-                TextButton(onClick = { vm.saveApiKey(key); onDismiss() }) { Text("Guardar") }
+                TextButton(onClick = { vm.saveApiKey(key.trim()); vm.testApiKey() }) {
+                    Text("Guardar y probar", color = AccentPurple)
+                }
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar", color = TextSecondary) } }
     )
 }
 
@@ -272,32 +310,55 @@ private fun ShuffleQualityDialog(state: ProfileUiState, vm: ProfileViewModel, on
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Surface2,
-        title = { Text("Calidad de Smart Shuffle") },
+        title = { Text("Calidad de Smart Shuffle", color = TextPrimary, fontWeight = FontWeight.Bold) },
         text = {
             Column {
-                listOf("HIGH" to "Alta (Análisis profundo)", "MEDIUM" to "Media (Equilibrado)", "LOW" to "Baja (Aleatorio)").forEach { (valStr, label) ->
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { vm.saveShuffleQuality(valStr) }) {
-                        RadioButton(selected = state.shuffleQuality == valStr, onClick = { vm.saveShuffleQuality(valStr) })
-                        Text(label, color = TextPrimary)
+                listOf(
+                    "HIGH" to "Alta — Análisis profundo del historial",
+                    "MEDIUM" to "Media — Equilibrado (recomendado)",
+                    "LOW" to "Baja — Más aleatorio"
+                ).forEach { (value, label) ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable { vm.saveShuffleQuality(value) }
+                    ) {
+                        RadioButton(
+                            selected = state.shuffleQuality == value,
+                            onClick = { vm.saveShuffleQuality(value) },
+                            colors = RadioButtonDefaults.colors(selectedColor = AccentPurple)
+                        )
+                        Text(label, color = TextPrimary, fontSize = 14.sp)
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Cerrar") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Cerrar", color = AccentPurple) } }
     )
 }
 
 @Composable
-private fun CacheDialog(onDismiss: () -> Unit) {
+private fun CacheDialog(vm: ProfileViewModel, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Surface2,
-        title = { Text("Descargas y Caché") },
-        text = { Text("Caché actual: 12.4 MB\nLos streams se guardan temporalmente para ahorrar datos.") },
-        confirmButton = {
-            TextButton(onClick = { /* Clean cache */ onDismiss() }) { Text("Limpiar Caché") }
+        title = { Text("Caché de streams", color = TextPrimary, fontWeight = FontWeight.Bold) },
+        text = {
+            Text(
+                "Las URLs de audio se cachean 45 minutos para ahorrar ancho de banda.\n\n" +
+                "Limpiar fuerza re-extracción en la próxima reproducción.",
+                color = TextSecondary,
+                fontSize = 13.sp
+            )
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Aceptar") } }
+        confirmButton = {
+            TextButton(onClick = {
+                vm.clearStreamCache()
+                onDismiss()
+            }) {
+                Text("Limpiar Caché", color = Color(0xFFEF4444))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cerrar", color = TextSecondary) } }
     )
 }
 
@@ -306,15 +367,20 @@ private fun AboutDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Surface2,
-        title = { Text("Acerca de WilPlayer") },
+        title = { Text("Acerca de WilPlayer", color = TextPrimary, fontWeight = FontWeight.Bold) },
         text = {
-            Column {
-                Text("Versión 1.0.0-PRO", fontWeight = FontWeight.Bold, color = AccentPurple)
-                Spacer(Modifier.height(8.dp))
-                Text("Desarrollado por Wil Gomez\nUn reproductor premium impulsado por NewPipe Extractor y Media3.", fontSize = 13.sp, color = TextSecondary)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                GradientText("Versión 1.0.0", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "Desarrollado por Wil Gomez\n\n" +
+                    "Motor: NewPipe Extractor + Media3 ExoPlayer\n" +
+                    "Reproduce audio de YouTube sin publicidad.",
+                    fontSize = 13.sp,
+                    color = TextSecondary
+                )
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Aceptar") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Aceptar", color = AccentPurple) } }
     )
 }
 

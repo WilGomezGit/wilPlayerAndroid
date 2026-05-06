@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wilplayer.android.domain.model.Playlist
+import com.wilplayer.android.domain.model.Song
 import com.wilplayer.android.ui.LibraryViewModel
 import com.wilplayer.android.ui.PlayerViewModel
 import com.wilplayer.android.ui.components.*
@@ -25,8 +26,8 @@ import com.wilplayer.android.ui.theme.*
 
 enum class LibraryTab(val label: String) {
     PLAYLISTS("Playlists"),
+    LIKED("Me Gusta"),
     ARTISTS("Artistas"),
-    ALBUMS("Álbumes"),
 }
 
 @Composable
@@ -40,6 +41,7 @@ fun LibraryScreen(
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     var activeTab by remember { mutableStateOf(LibraryTab.PLAYLISTS) }
     var showCreateDialog by remember { mutableStateOf(false) }
+    var optionsSong by remember { mutableStateOf<Song?>(null) }
 
     Column(
         modifier = modifier
@@ -77,13 +79,7 @@ fun LibraryScreen(
                 FilterChip(
                     selected = isActive,
                     onClick = { activeTab = tab },
-                    label = {
-                        Text(
-                            tab.label,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    },
+                    label = { Text(tab.label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = AccentPurple.copy(alpha = 0.15f),
                         selectedLabelColor = AccentPurple,
@@ -103,13 +99,15 @@ fun LibraryScreen(
         }
 
         // ── Sort indicator ─────────────────────────────────────────────────────
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Icon(FilterIcon, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(16.dp))
-            Text("Recientes", fontSize = 12.sp, color = TextTertiary)
+        if (activeTab == LibraryTab.PLAYLISTS) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(FilterIcon, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(16.dp))
+                Text("Recientes", fontSize = 12.sp, color = TextTertiary)
+            }
         }
 
         // ── Content ────────────────────────────────────────────────────────────
@@ -119,8 +117,16 @@ fun LibraryScreen(
                 isLoading = uiState.isLoading,
                 onPlaylistClick = onNavigateToPlaylist
             )
+            LibraryTab.LIKED -> LikedSongsList(
+                songs = uiState.likedSongs,
+                isLoading = uiState.isLoading,
+                onSongClick = { song ->
+                    playerVm.playSong(song, uiState.likedSongs)
+                    onNavigateToPlayer()
+                },
+                onMoreClick = { song -> optionsSong = song }
+            )
             LibraryTab.ARTISTS -> ArtistList(artists = uiState.artists)
-            LibraryTab.ALBUMS -> EmptyState("Álbumes")
         }
     }
 
@@ -132,6 +138,16 @@ fun LibraryScreen(
                 showCreateDialog = false
             },
             onDismiss = { showCreateDialog = false }
+        )
+    }
+
+    // ── Song options sheet ─────────────────────────────────────────────────────
+    optionsSong?.let { song ->
+        SongOptionsSheet(
+            song = song,
+            onDismiss = { optionsSong = null },
+            onToggleLike = { playerVm.toggleLike(song) },
+            onAddToQueue = { playerVm.addToQueue(song) },
         )
     }
 }
@@ -169,6 +185,46 @@ private fun PlaylistList(
             }
         }
         item { Spacer(Modifier.height(16.dp)) }
+    }
+}
+
+@Composable
+private fun LikedSongsList(
+    songs: List<Song>,
+    isLoading: Boolean,
+    onSongClick: (Song) -> Unit,
+    onMoreClick: (Song) -> Unit,
+) {
+    when {
+        isLoading -> LazyColumn {
+            items(5) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    ShimmerBox(modifier = Modifier.size(44.dp), shape = RoundedCornerShape(8.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        ShimmerBox(modifier = Modifier.width(160.dp).height(12.dp))
+                        ShimmerBox(modifier = Modifier.width(100.dp).height(10.dp))
+                    }
+                }
+            }
+        }
+        songs.isEmpty() -> EmptyState("Sin canciones favoritas.\nPulsa ♡ en cualquier canción.")
+        else -> LazyColumn {
+            itemsIndexed(songs) { idx, song ->
+                SongListItem(
+                    song = song,
+                    isPlaying = false,
+                    paletteIndex = idx,
+                    onClick = { onSongClick(song) },
+                    onMoreClick = { onMoreClick(song) }
+                )
+                if (idx < songs.lastIndex) WilDivider(modifier = Modifier.padding(start = 72.dp))
+            }
+            item { Spacer(Modifier.height(16.dp)) }
+        }
     }
 }
 
@@ -212,6 +268,10 @@ private fun PlaylistItem(
 
 @Composable
 private fun ArtistList(artists: List<String>) {
+    if (artists.isEmpty()) {
+        EmptyState("Sin artistas todavía.\nReproducir canciones los añade aquí.")
+        return
+    }
     LazyColumn {
         items(artists) { artist ->
             Row(
@@ -231,6 +291,7 @@ private fun ArtistList(artists: List<String>) {
                 Text(artist, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
             }
         }
+        item { Spacer(Modifier.height(16.dp)) }
     }
 }
 
@@ -271,9 +332,7 @@ private fun CreatePlaylistDialog(onConfirm: (String) -> Unit, onDismiss: () -> U
             )
         },
         confirmButton = {
-            TextButton(
-                onClick = { if (name.isNotBlank()) onConfirm(name.trim()) },
-            ) {
+            TextButton(onClick = { if (name.isNotBlank()) onConfirm(name.trim()) }) {
                 GradientText("Crear", fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
         },

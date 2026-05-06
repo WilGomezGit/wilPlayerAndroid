@@ -1,5 +1,6 @@
 package com.wilplayer.android.ui.components
 
+import android.content.Intent
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -315,6 +316,100 @@ fun ErrorState(
                 Text("Reintentar", color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
+    }
+}
+
+// ── Song Options Bottom Sheet ─────────────────────────────────────────────────
+
+/**
+ * Reusable bottom sheet with Like, Add-to-queue, and Share actions for a song.
+ * Place it outside any LazyColumn to avoid nested scrolling issues.
+ */
+@Composable
+fun SongOptionsSheet(
+    song: Song,
+    onDismiss: () -> Unit,
+    onToggleLike: () -> Unit,
+    onAddToQueue: () -> Unit,
+) {
+    val context = LocalContext.current
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Surface2,
+        dragHandle = { BottomSheetDefaults.DragHandle(color = TextTertiary) },
+    ) {
+        Column(modifier = Modifier.padding(bottom = 32.dp)) {
+            // Song header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CoverArt(song = song, size = 48.dp, radius = 8.dp)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        song.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                        color = TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
+                    Text(song.artist, fontSize = 12.sp, color = TextSecondary, maxLines = 1)
+                }
+            }
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                color = Border1, thickness = 1.dp
+            )
+            // Like / Unlike
+            OptionsRow(
+                icon = if (song.isLiked) HeartIcon else HeartBorderIcon,
+                label = if (song.isLiked) "Quitar de Me Gusta" else "Me Gusta",
+                tint = if (song.isLiked) AccentPurple else TextPrimary,
+                onClick = { onToggleLike(); onDismiss() }
+            )
+            // Add to queue
+            OptionsRow(
+                icon = QueueIcon,
+                label = "Agregar a la cola",
+                onClick = { onAddToQueue(); onDismiss() }
+            )
+            // Share
+            OptionsRow(
+                icon = ShareIcon,
+                label = "Compartir",
+                onClick = {
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(
+                            Intent.EXTRA_TEXT,
+                            "Escuchando «${song.title}» en WilPlayer: ${song.youtubeUrl}"
+                        )
+                    }
+                    context.startActivity(Intent.createChooser(intent, "Compartir canción"))
+                    onDismiss()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun OptionsRow(
+    icon: ImageVector,
+    label: String,
+    tint: Color = TextPrimary,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+        Text(label, fontSize = 15.sp, color = TextPrimary)
     }
 }
 

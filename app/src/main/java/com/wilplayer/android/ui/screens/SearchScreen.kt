@@ -41,6 +41,7 @@ fun SearchScreen(
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
+    var optionsSong by remember { mutableStateOf<com.wilplayer.android.domain.model.Song?>(null) }
 
     Column(
         modifier = modifier
@@ -71,7 +72,6 @@ fun SearchScreen(
 
         // ── Content ────────────────────────────────────────────────────────────
         if (uiState.query.isBlank()) {
-            // Show genres + trending
             LazyColumn {
                 item {
                     TrendingPreview(
@@ -89,7 +89,6 @@ fun SearchScreen(
                 item { Spacer(Modifier.height(16.dp)) }
             }
         } else {
-            // Show search results
             SearchResults(
                 songs = uiState.results,
                 isLoading = uiState.isLoading,
@@ -98,9 +97,20 @@ fun SearchScreen(
                     playerVm.playSong(song, uiState.results)
                     onNavigateToPlayer()
                 },
+                onMoreClick = { song -> optionsSong = song },
                 onRetry = { vm.search() }
             )
         }
+    }
+
+    // ── Song options sheet ─────────────────────────────────────────────────────
+    optionsSong?.let { song ->
+        SongOptionsSheet(
+            song = song,
+            onDismiss = { optionsSong = null },
+            onToggleLike = { playerVm.toggleLike(song) },
+            onAddToQueue = { playerVm.addToQueue(song) },
+        )
     }
 }
 
@@ -280,6 +290,7 @@ private fun SearchResults(
     isLoading: Boolean,
     error: String?,
     onSongClick: (Song) -> Unit,
+    onMoreClick: (Song) -> Unit,
     onRetry: () -> Unit,
 ) {
     when {
@@ -311,7 +322,8 @@ private fun SearchResults(
                 SongListItem(
                     song = song,
                     paletteIndex = idx,
-                    onClick = { onSongClick(song) }
+                    onClick = { onSongClick(song) },
+                    onMoreClick = { onMoreClick(song) }
                 )
                 if (idx < songs.lastIndex) WilDivider(modifier = Modifier.padding(start = 72.dp))
             }

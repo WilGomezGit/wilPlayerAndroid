@@ -87,7 +87,9 @@ data class PlayerState(
     val queueIndex: Int = 0,
     val isBuffering: Boolean = false,
     val volume: Float = 1.0f,
-    val isMuted: Boolean = false
+    val isMuted: Boolean = false,
+    /** Non-null when stream extraction or playback fails; shown as a Snackbar. */
+    val errorMessage: String? = null,
 ) {
     val progressFraction: Float
         get() = if (duration > 0) progress.toFloat() / duration.toFloat() else 0f

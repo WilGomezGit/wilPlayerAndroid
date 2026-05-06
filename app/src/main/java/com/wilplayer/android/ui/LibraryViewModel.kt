@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wilplayer.android.data.repository.MusicRepository
 import com.wilplayer.android.domain.model.Playlist
+import com.wilplayer.android.domain.model.Song
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -11,6 +12,7 @@ import javax.inject.Inject
 
 data class LibraryUiState(
     val playlists: List<Playlist> = emptyList(),
+    val likedSongs: List<Song> = emptyList(),
     val artists: List<String> = emptyList(),
     val isLoading: Boolean = true,
 )
@@ -25,12 +27,20 @@ class LibraryViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            repository.getAllPlaylists()
-                .collect { playlists ->
-                    _uiState.update {
-                        it.copy(playlists = playlists, isLoading = false)
-                    }
+            combine(
+                repository.getAllPlaylists(),
+                repository.getLikedSongs(),
+                repository.getArtists(),
+            ) { playlists, liked, artists ->
+                _uiState.update {
+                    it.copy(
+                        playlists = playlists,
+                        likedSongs = liked,
+                        artists = artists,
+                        isLoading = false,
+                    )
                 }
+            }.collect()
         }
     }
 
