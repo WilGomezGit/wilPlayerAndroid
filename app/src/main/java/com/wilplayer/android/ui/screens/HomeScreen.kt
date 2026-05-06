@@ -85,11 +85,11 @@ fun HomeScreen(
             }
         }
 
-        // ── Trending ──────────────────────────────────────────────────────────
+        // ── Rock & Metal ──────────────────────────────────────────────────────
         if (uiState.trending.isNotEmpty() || uiState.isLoading) {
             item {
                 SectionHeader(
-                    title = "Tendencias en Colombia",
+                    title = "Rock & Metal",
                     onSeeAll = {},
                     modifier = Modifier.padding(bottom = 10.dp)
                 )
@@ -144,7 +144,6 @@ private fun HomeHeader(onSearchClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // WilPlayer logo text
         GradientText(
             text = "WilPlayer",
             fontSize = 22.sp,
@@ -163,7 +162,6 @@ private fun HomeHeader(onSearchClick: () -> Unit) {
                     modifier = Modifier.size(22.dp)
                 )
             }
-            // Avatar
             Box(
                 modifier = Modifier
                     .size(30.dp)
@@ -328,6 +326,7 @@ private fun HorizontalSongRows(
 // ── Mood Row ──────────────────────────────────────────────────────────────────
 
 @Composable
+private fun MoodRow(onMoodClick: (String) -> Unit) {
     val moods = listOf(
         Triple("🤘 Clásicos", 0, "classic rock"),
         Triple("🎸 Hard Rock", 1, "hard rock hits"),
@@ -335,6 +334,7 @@ private fun HorizontalSongRows(
         Triple("🎤 Alternativo", 3, "alternative rock"),
         Triple("🎵 Indie Rock", 4, "indie rock playlist"),
     )
+
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
