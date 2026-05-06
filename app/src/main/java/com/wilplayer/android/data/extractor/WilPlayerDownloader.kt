@@ -16,8 +16,8 @@ class WilPlayerDownloader private constructor() : Downloader() {
             val request = chain.request().newBuilder()
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 .header("Accept-Language", "en-US,en;q=0.9")
-                // Esta cookie evita la página "The page needs to be reloaded"
-                .header("Cookie", "CONSENT=YES+")
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+                .addHeader("Cookie", "CONSENT=YES+cb.20210328-17-p0.en+FX+")
                 .build()
             chain.proceed(request)
         }
