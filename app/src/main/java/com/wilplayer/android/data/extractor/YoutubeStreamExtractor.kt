@@ -51,10 +51,10 @@ class YoutubeStreamExtractor @Inject constructor(
             audioStream?.content?.also { streamUrl ->
                 urlCache[videoId] = CachedUrl(streamUrl)
             }
-        } catch (e: Exception) {
+        } } catch (e: Exception) {
             Log.e("YtExtractor", "Error for $videoId", e)
-            throw e  // relanzamos la excepción para que la capa superior la capture
-            null
+            throw e
+            }
         }
     }
 
