@@ -40,6 +40,7 @@ fun PlaylistDetailScreen(
     playlistId: String,
     playerVm: PlayerViewModel,
     onNavigateToPlayer: () -> Unit,
+    onNavigateToSearch: () -> Unit,  // <-- NUEVO
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     vm: PlaylistDetailViewModel = hiltViewModel(),
