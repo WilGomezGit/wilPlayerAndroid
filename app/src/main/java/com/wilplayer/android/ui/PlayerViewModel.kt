@@ -235,34 +235,12 @@ class PlayerViewModel @Inject constructor(
 
     private fun enableSmartShuffle() {
         viewModelScope.launch {
+            val mc = mediaController ?: return@launch
             val currentQueue = _queue.value
+
             if (currentQueue.isEmpty()) return@launch
 
-            val smartQueue = repository.getSmartShuffleQueue(currentQueue)
-            val currentSong = _playerState.value.currentSong
-
-            val mediaItems = smartQueue.map { s ->
-                MediaItem.Builder()
-                    .setMediaId(s.id)
-                    .setUri(Uri.parse("https://www.youtube.com/watch?v=${s.videoId}"))
-                    .setMediaMetadata(
-                        MediaMetadata.Builder()
-                            .setTitle(s.title)
-                            .setArtist(s.artist)
-                            .setArtworkUri(Uri.parse(s.thumbnailUrl))
-                            .build()
-                    )
-                    .build()
-            }
-
-            _queue.value = smartQueue
-            mediaController?.let { mc ->
-                val currentPos = mc.currentPosition
-                val startIdx = smartQueue.indexOfFirst { it.id == currentSong?.id }.coerceAtLeast(0)
-                mc.setMediaItems(mediaItems, startIdx, currentPos)
-                mc.shuffleModeEnabled = true
-            }
-
+            mc.shuffleModeEnabled = true
             _playerState.update { it.copy(shuffleMode = ShuffleMode.SMART) }
         }
     }
