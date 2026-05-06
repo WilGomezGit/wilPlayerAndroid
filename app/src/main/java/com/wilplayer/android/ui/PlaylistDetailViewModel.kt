@@ -30,3 +30,6 @@ class PlaylistDetailViewModel @Inject constructor(
         }
     }
 }
+
+@Query("SELECT COUNT(*) FROM PlaylistSongCrossRef WHERE playlistId = :playlistId")
+suspend fun getPlaylistSongCount(playlistId: String): Int
