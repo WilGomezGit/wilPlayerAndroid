@@ -44,7 +44,7 @@ class YoutubeStreamExtractor @Inject constructor(
 
             // Prefer M4A (AAC) — best ExoPlayer compatibility; fall back to highest bitrate
             val audioStream = streamInfo.audioStreams
-                .filter { it.format.name.lowercase().contains("m4a") }
+                .filter { it.format?.name?.lowercase()?.contains("m4a") == true }
                 .maxByOrNull { it.bitrate }
                 ?: streamInfo.audioStreams.maxByOrNull { it.bitrate }
 
