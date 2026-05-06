@@ -28,19 +28,16 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        // Observe local library and load trending songs upon initialization.
         observeLibrary()
-        loadTrending()
+        loadRockMetalTrending()
     }
 
-    // Call this explicitly from the UI when the user pulls-to-refresh or
-    // navigates to the Home tab after the first launch.
-    fun loadTrending() {
+    fun loadRockMetalTrending() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            when (val result = repository.getTrending()) {
+            when (val result = repository.search("rock metal clásicos")) {
                 is Result.Success -> _uiState.update {
-                    it.copy(isLoading = false, trending = result.data)
+                    it.copy(isLoading = false, trending = result.data.songs)
                 }
                 is Result.Error -> _uiState.update {
                     it.copy(isLoading = false, error = result.message)
@@ -59,7 +56,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun refresh() = loadTrending()
+    fun refresh() = loadRockMetalTrending()
 
     fun searchByMood(mood: String) {
         viewModelScope.launch {
