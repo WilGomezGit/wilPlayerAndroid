@@ -135,13 +135,28 @@ class PlayerViewModel @Inject constructor(
 
             // Resolve the current song's stream URL; others get placeholder YouTube URLs
             // which the MusicPlayerService resolves proactively before they are needed.
-            val streamUrl = extractor.extractStreamUrl(song.videoId)
-            if (streamUrl == null) {
-                _playerState.update {
-                    it.copy(isBuffering = false, errorMessage = "No se pudo obtener el stream. Verifica tu conexión.")
+            val streamUrl = try {
+             extractor.extractStreamUrl(song.videoId)
+                } catch (e: Exception) {
+                    // Muestra el error real en la UI
+                    _playerState.update {
+                        it.copy(
+                            isBuffering = false,
+                            errorMessage = "Error: ${e.message ?: "desconocido"}"
+                        )
+                    }
+                    return@launch
                 }
-                return@launch
-            }
+                
+                if (streamUrl == null) {
+                    _playerState.update {
+                        it.copy(
+                            isBuffering = false,
+                            errorMessage = "No se pudo obtener el stream (URL nula)."
+                        )
+                    }
+                    return@launch
+                }
 
             val mediaItems = queue.map { s ->
                 val uri = if (s.id == song.id) streamUrl
