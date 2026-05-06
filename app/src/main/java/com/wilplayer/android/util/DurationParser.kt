@@ -1,20 +1,8 @@
 package com.wilplayer.android.util
 
-/**
- * Utility for parsing YouTube ISO 8601 durations and formatting milliseconds.
- *
- * Examples:
- *   parseDuration("PT3M42S")    → 222_000L  (3 min 42 sec)
- *   parseDuration("PT1H5M30S")  → 3_930_000L
- *   formatDuration(222_000L)    → "3:42"
- *   formatDuration(3_930_000L)  → "1:05:30"
- */
 object DurationParser {
 
-    /**
-     * Parses an ISO 8601 duration string into milliseconds.
-     * Returns 0L if the input is blank or unparseable.
-     */
+    /** Parses PT3M42S → 222000 ms */
     fun parseDuration(duration: String): Long {
         if (duration.isBlank()) return 0L
         return try {
@@ -29,10 +17,7 @@ object DurationParser {
         }
     }
 
-    /**
-     * Formats a duration in milliseconds to a human-readable string.
-     * Output: "M:SS", "MM:SS" or "H:MM:SS".
-     */
+    /** 225000 ms → "3:45" */
     fun formatDuration(durationMs: Long): String {
         if (durationMs <= 0L) return "0:00"
         val totalSec = durationMs / 1_000L
@@ -43,6 +28,17 @@ object DurationParser {
             "%d:%02d:%02d".format(hours, minutes, seconds)
         } else {
             "%d:%02d".format(minutes, seconds)
+        }
+    }
+
+    /** Convierte "3400000" → "3.4M" (vistas) */
+    fun formatViews(viewCount: String?): String {
+        val count = viewCount?.toLongOrNull() ?: return ""
+        return when {
+            count >= 1_000_000_000 -> "%.1fB".format(count / 1_000_000_000.0)
+            count >= 1_000_000     -> "%.1fM".format(count / 1_000_000.0)
+            count >= 1_000         -> "%.1fK".format(count / 1_000.0)
+            else                   -> count.toString()
         }
     }
 }
