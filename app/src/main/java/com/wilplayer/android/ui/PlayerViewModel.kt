@@ -227,13 +227,41 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    private fun enableSmartShuffle() {
+       private fun enableSmartShuffle() {
         viewModelScope.launch {
             val mc = mediaController ?: return@launch
-            if (_queue.value.isEmpty()) return@launch
-
+            val currentQueue = _queue.value
+            if (currentQueue.isEmpty()) return@launch
+    
+            _playerState.update { it.copy(isBuffering = true) }
+    
+            // Resuelve las URLs de todas las canciones de la cola para evitar fallos
+            val resolvedItems = currentQueue.map { song ->
+                val streamUrl = try {
+                    extractor.extractStreamUrl(song.videoId)
+                } catch (e: Exception) {
+                    null
+                }
+                val uri = if (streamUrl != null) streamUrl
+                          else "https://www.youtube.com/watch?v=${song.videoId}"
+                MediaItem.Builder()
+                    .setMediaId(song.id)
+                    .setUri(Uri.parse(uri))
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle(song.title)
+                            .setArtist(song.artist)
+                            .setArtworkUri(Uri.parse(song.thumbnailUrl))
+                            .build()
+                    )
+                    .build()
+            }
+    
+            mc.setMediaItems(resolvedItems, 0, 0L)
             mc.shuffleModeEnabled = true
-            _playerState.update { it.copy(shuffleMode = ShuffleMode.SMART) }
+            mc.prepare()
+            mc.play()
+            _playerState.update { it.copy(isBuffering = false, shuffleMode = ShuffleMode.SMART) }
         }
     }
 
