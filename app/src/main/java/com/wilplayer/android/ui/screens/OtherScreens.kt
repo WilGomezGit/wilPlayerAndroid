@@ -291,6 +291,8 @@ private fun SettingsItem(emoji: String, label: String, onClick: () -> Unit) {
 @Composable
 private fun ApiKeyDialog(state: ProfileUiState, vm: ProfileViewModel, onDismiss: () -> Unit) {
     var key by remember { mutableStateOf(state.apiKey) }
+    val isValidFormat = vm.isValidApiKeyFormat(key.trim())
+
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Surface2,
@@ -298,12 +300,14 @@ private fun ApiKeyDialog(state: ProfileUiState, vm: ProfileViewModel, onDismiss:
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Obtén una clave en Google Cloud Console → YouTube Data API v3.", fontSize = 12.sp, color = TextSecondary)
+                
                 OutlinedTextField(
                     value = key,
                     onValueChange = { key = it },
                     placeholder = { Text("AIza...", color = TextTertiary) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
+                    isError = key.isNotEmpty() && !isValidFormat,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = TextPrimary,
                         unfocusedTextColor = TextPrimary,
@@ -311,24 +315,53 @@ private fun ApiKeyDialog(state: ProfileUiState, vm: ProfileViewModel, onDismiss:
                         unfocusedBorderColor = Border2,
                     )
                 )
+
+                // Feedback de formato
+                if (key.isNotEmpty() && !isValidFormat) {
+                    Text(
+                        text = when {
+                            !key.startsWith("AIza") -> "❌ Debe empezar con 'AIza'"
+                            key.length < 39 -> "⚠️ Faltan ${39 - key.length} caracteres"
+                            key.length > 39 -> "⚠️ Sobran ${key.length - 39} caracteres"
+                            else -> ""
+                        },
+                        color = Color(0xFFEF4444),
+                        fontSize = 11.sp
+                    )
+                } else if (isValidFormat && state.isApiKeyValid == null) {
+                    Text("✅ Formato correcto. Pulsa Probar.", color = Color(0xFF10B981), fontSize = 11.sp)
+                }
+
+                // Estado de la prueba real
                 when {
                     state.isCheckingKey == true ->
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = AccentPurple)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = AccentPurple, strokeWidth = 2.dp)
+                            Text("Verificando con YouTube...", fontSize = 12.sp, color = TextSecondary)
+                        }
                     state.isApiKeyValid == true ->
-                        Text("✅ Conexión exitosa", color = Color(0xFF10B981), fontSize = 12.sp)
+                        Text("🎉 ¡Conexión exitosa! Todo listo.", color = Color(0xFF10B981), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     state.isApiKeyValid == false ->
-                        Text("❌ Clave inválida o sin cuota", color = Color(0xFFEF4444), fontSize = 12.sp)
+                        Text("❌ Clave inválida o sin cuota (Error 403/400)", color = Color(0xFFEF4444), fontSize = 12.sp)
                 }
             }
         },
         confirmButton = {
-            Row {
-                TextButton(onClick = { vm.saveApiKey(key.trim()); vm.testApiKey() }) {
-                    Text("Guardar y probar", color = AccentPurple)
+            TextButton(
+                enabled = isValidFormat && state.isCheckingKey != true,
+                onClick = { 
+                    vm.saveApiKey(key.trim())
+                    vm.testApiKey() 
                 }
+            ) {
+                Text("Guardar y probar", color = if (isValidFormat) AccentPurple else TextTertiary)
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar", color = TextSecondary) } }
+        dismissButton = { 
+            TextButton(onClick = onDismiss) { 
+                Text("Cancelar", color = TextSecondary) 
+            } 
+        }
     )
 }
 

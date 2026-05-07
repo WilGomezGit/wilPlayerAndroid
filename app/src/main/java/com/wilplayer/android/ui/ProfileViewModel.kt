@@ -43,10 +43,15 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun isValidApiKeyFormat(key: String): Boolean {
+        // YouTube API keys usually start with AIza and are 39 characters long
+        return key.startsWith("AIza") && key.length == 39
+    }
+
     fun saveApiKey(key: String) {
         viewModelScope.launch {
             userPrefs.saveApiKey(key)
-            _uiState.update { it.copy(isApiKeyValid = null) }
+            _uiState.update { it.copy(apiKey = key, isApiKeyValid = null) }
         }
     }
 
