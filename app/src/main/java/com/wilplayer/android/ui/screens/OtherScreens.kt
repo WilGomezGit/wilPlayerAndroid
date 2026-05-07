@@ -40,7 +40,7 @@ fun PlaylistDetailScreen(
     playlistId: String,
     playerVm: PlayerViewModel,
     onNavigateToPlayer: () -> Unit,
-    onNavigateToSearch: () -> Unit,  // <-- NUEVO
+    onNavigateToSearch: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     vm: PlaylistDetailViewModel = hiltViewModel(),
@@ -104,97 +104,92 @@ fun PlaylistDetailScreen(
         }
 
         item {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Grupo izquierdo: compartir + añadir canciones
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Share playlist
-            IconButton(onClick = {
-                val playlistUrl = playlist?.let {
-                    if (it.youtubePlaylistId != null)
-                        "https://www.youtube.com/playlist?list=${it.youtubePlaylistId}"
-                    else it.name
-                } ?: ""
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, "Escucha «${playlist?.name}» en WilPlayer: $playlistUrl")
-                }
-                context.startActivity(Intent.createChooser(intent, "Compartir playlist"))
-            }) {
-                Icon(
-                    ShareIcon,
-                    contentDescription = "Compartir",
-                    tint = TextTertiary,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-
-            // Add songs button
-            TextButton(onClick = onNavigateToSearch) {
-                Icon(
-                    imageVector = AddIcon,
-                    contentDescription = "Añadir canciones",
-                    tint = AccentPurple,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    "Añadir canciones",
-                    color = AccentPurple,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-
-        // Grupo derecho: shuffle + play
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Shuffle button
-            Box(
+            Row(
                 modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(Surface2)
-                    .border(1.dp, Border2, RoundedCornerShape(18.dp))
-                    .clickable {
-                        playlist?.songs?.takeIf { it.isNotEmpty() }?.let { songs ->
-                            playerVm.playSong(songs.random(), songs)
-                            playerVm.toggleShuffle()
-                            onNavigateToPlayer()
-                        }
-                    },
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    ShuffleIcon,
-                    contentDescription = "Aleatorio",
-                    tint = if (playerState.shuffleMode != com.wilplayer.android.domain.model.ShuffleMode.OFF) AccentPurple else TextSecondary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            // Play button
-            PlayPauseButton(
-                isPlaying = playerState.isPlaying && playlist?.songs?.any { it.id == playerState.currentSong?.id } == true,
-                onClick = {
-                    playlist?.songs?.firstOrNull()?.let { first ->
-                        playerVm.playSong(first, playlist.songs)
-                        onNavigateToPlayer()
+                // Grupo izquierdo: compartir + añadir canciones
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    // Share playlist
+                    IconButton(onClick = {
+                        val playlistUrl = playlist?.let {
+                            if (it.youtubePlaylistId != null)
+                                "https://www.youtube.com/playlist?list=${it.youtubePlaylistId}"
+                            else it.name
+                        } ?: ""
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, "Escucha «${playlist?.name}» en WilPlayer: $playlistUrl")
+                        }
+                        context.startActivity(Intent.createChooser(intent, "Compartir playlist"))
+                    }) {
+                        Icon(ShareIcon, contentDescription = "Compartir", tint = TextTertiary, modifier = Modifier.size(22.dp))
                     }
-                },
-                size = 52.dp
-            )
+
+                    // Add songs button
+                    TextButton(onClick = onNavigateToSearch) {
+                        Icon(
+                            imageVector = AddIcon,
+                            contentDescription = "Añadir canciones",
+                            tint = AccentPurple,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "Añadir canciones",
+                            color = AccentPurple,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                // Grupo derecho: shuffle + play
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Shuffle button
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(Surface2)
+                            .border(1.dp, Border2, RoundedCornerShape(18.dp))
+                            .clickable {
+                                playlist?.songs?.takeIf { it.isNotEmpty() }?.let { songs ->
+                                    playerVm.playSong(songs.random(), songs)
+                                    playerVm.toggleShuffle()
+                                    onNavigateToPlayer()
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            ShuffleIcon,
+                            contentDescription = "Aleatorio",
+                            tint = if (playerState.shuffleMode != com.wilplayer.android.domain.model.ShuffleMode.OFF) AccentPurple else TextSecondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    // Play button
+                    PlayPauseButton(
+                        isPlaying = playerState.isPlaying && playlist?.songs?.any { it.id == playerState.currentSong?.id } == true,
+                        onClick = {
+                            playlist?.songs?.firstOrNull()?.let { first ->
+                                playerVm.playSong(first, playlist.songs)
+                                onNavigateToPlayer()
+                            }
+                        },
+                        size = 52.dp
+                    )
+                }
+            }
         }
-    }
-}
 
         itemsIndexed(playlist?.songs ?: emptyList()) { idx, song ->
             val isCurrentlyPlaying = playerState.currentSong?.id == song.id

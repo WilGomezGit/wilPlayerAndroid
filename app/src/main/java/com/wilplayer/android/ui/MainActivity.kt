@@ -208,6 +208,7 @@ fun WilPlayerApp() {
                     playlistId = playlistId,
                     playerVm = playerVm,
                     onNavigateToPlayer = { navController.navigate(Routes.PLAYER) },
+                    onNavigateToSearch = { navController.navigate(Routes.SEARCH) },
                     onBack = { navController.popBackStack() },
                 )
             }

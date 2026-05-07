@@ -120,6 +120,31 @@ fun HomeScreen(
             Spacer(Modifier.height(8.dp))
         }
 
+        // ── Rock & Metal recommendations ──────────────────────────────────────
+        if (uiState.recommendations.isNotEmpty() || uiState.isLoadingRecs) {
+            item {
+                SectionHeader(
+                    title = "🎸 Rock & Metal para ti",
+                    onSeeAll = { vm.loadRecommendations() },
+                    modifier = Modifier.padding(top = 12.dp, bottom = 10.dp)
+                )
+            }
+            if (uiState.isLoadingRecs) {
+                item { RecsShimmer() }
+            } else {
+                item {
+                    HorizontalSongCards(
+                        songs = uiState.recommendations,
+                        onSongClick = { song ->
+                            playerVm.playSong(song, uiState.recommendations)
+                            onNavigateToPlayer()
+                        }
+                    )
+                    Spacer(Modifier.height(20.dp))
+                }
+            }
+        }
+
         // ── Error state ───────────────────────────────────────────────────────
         if (uiState.error != null) {
             item {
@@ -372,6 +397,23 @@ private fun TrendingShimmer() {
     ) {
         items(4) {
             ShimmerBox(modifier = Modifier.width(200.dp).height(64.dp), shape = RoundedCornerShape(12.dp))
+        }
+    }
+}
+@Composable
+private fun RecsShimmer() {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(4) {
+            Column(modifier = Modifier.width(130.dp)) {
+                ShimmerBox(modifier = Modifier.size(130.dp), shape = RoundedCornerShape(12.dp))
+                Spacer(Modifier.height(6.dp))
+                ShimmerBox(modifier = Modifier.width(100.dp).height(12.dp))
+                Spacer(Modifier.height(4.dp))
+                ShimmerBox(modifier = Modifier.width(60.dp).height(10.dp))
+            }
         }
     }
 }

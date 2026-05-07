@@ -289,16 +289,16 @@ private fun TrendingPreview(
 @Composable
 private fun GenreGrid(onGenreClick: (String) -> Unit) {
     val genres = listOf(
-        Triple("Pop", 0, "#8b5cf6"),
-        Triple("Reggaetón", 1, "#f43f5e"),
-        Triple("Rock", 2, "#374151"),
-        Triple("Electrónica", 3, "#06b6d4"),
-        Triple("Hip-Hop", 4, "#f59e0b"),
-        Triple("R&B", 5, "#10b981"),
-        Triple("Baladas", 6, "#ec4899"),
-        Triple("Indie", 7, "#6366f1"),
-        Triple("Trap", 4, "#1f2937"),
-        Triple("K-Pop", 6, "#ec4899"),
+        Triple("Rock en Español", 1, "#374151"),
+        Triple("Heavy Metal",     0, "#1f2937"),
+        Triple("Metal",           5, "#374151"),
+        Triple("Rock",            2, "#4B5563"),
+        Triple("Clásicos Rock",   3, "#6366f1"),
+        Triple("Electrónica",     3, "#06b6d4"),
+        Triple("Hip-Hop",         4, "#f59e0b"),
+        Triple("R&B",             5, "#10b981"),
+        Triple("Baladas",         6, "#ec4899"),
+        Triple("Indie",           7, "#6366f1"),
     )
 
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {

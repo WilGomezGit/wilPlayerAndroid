@@ -13,7 +13,7 @@ import com.wilplayer.android.data.local.entity.*
         PlayHistoryEntity::class,
         SkipHistoryEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class WilPlayerDatabase : RoomDatabase() {

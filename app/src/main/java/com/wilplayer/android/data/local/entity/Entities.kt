@@ -71,6 +71,7 @@ data class PlaylistEntity(
 @Entity(
     tableName = "playlist_songs",
     primaryKeys = ["playlistId", "songId"],
+    indices = [Index(value = ["songId"])],
     foreignKeys = [
         ForeignKey(
             entity = PlaylistEntity::class,

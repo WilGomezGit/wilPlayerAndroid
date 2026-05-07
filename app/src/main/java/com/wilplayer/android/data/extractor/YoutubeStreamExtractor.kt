@@ -4,6 +4,10 @@ import android.content.Context
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.schabi.newpipe.extractor.NewPipe
 import org.schabi.newpipe.extractor.ServiceList
@@ -27,6 +31,10 @@ class YoutubeStreamExtractor @Inject constructor(
     // In-memory cache: videoId → resolved stream URL (with TTL)
     private val urlCache = HashMap<String, CachedUrl>()
 
+    // Per-videoId mutex to avoid duplicate concurrent extractions
+    private val extractionMutexes = HashMap<String, Mutex>()
+    private val mapMutex = Mutex()
+
     private fun ensureInitialized() {
         if (!isInitialized) {
             NewPipe.init(WilPlayerDownloader.getInstance())
@@ -38,24 +46,45 @@ class YoutubeStreamExtractor @Inject constructor(
         // Return cached URL if still valid
         urlCache[videoId]?.takeUnless { it.isExpired() }?.let { return@withContext it.url }
 
-        ensureInitialized()
-        try {
-            val url = "https://www.youtube.com/watch?v=$videoId"
-            val streamInfo = StreamInfo.getInfo(ServiceList.YouTube, url)
-
-            // Prefer M4A (AAC) — best ExoPlayer compatibility; fall back to highest bitrate
-            val audioStream = streamInfo.audioStreams
-                .filter { it.format?.name?.lowercase()?.contains("m4a") == true }
-                .maxByOrNull { it.bitrate }
-                ?: streamInfo.audioStreams.maxByOrNull { it.bitrate }
-
-            audioStream?.content?.also { streamUrl ->
-                urlCache[videoId] = CachedUrl(streamUrl)
-            }
-        } catch (e: Exception) {
-            Log.e("YtExtractor", "Error for $videoId", e)
-            throw e
+        // Get or create a per-videoId mutex so duplicate calls wait on the same lock
+        val mutex = mapMutex.withLock {
+            extractionMutexes.getOrPut(videoId) { Mutex() }
         }
+
+        mutex.withLock {
+            // Double-check cache after acquiring lock (another coroutine may have populated it)
+            urlCache[videoId]?.takeUnless { it.isExpired() }?.let { return@withLock it.url }
+
+            ensureInitialized()
+            try {
+                val url = "https://www.youtube.com/watch?v=$videoId"
+                val streamInfo = StreamInfo.getInfo(ServiceList.YouTube, url)
+
+                // Prefer M4A (AAC) — best ExoPlayer compatibility; fall back to highest bitrate
+                val audioStream = streamInfo.audioStreams
+                    .filter { it.format?.name?.lowercase()?.contains("m4a") == true }
+                    .maxByOrNull { it.bitrate }
+                    ?: streamInfo.audioStreams.maxByOrNull { it.bitrate }
+
+                audioStream?.content?.also { streamUrl ->
+                    urlCache[videoId] = CachedUrl(streamUrl)
+                }
+            } catch (e: Exception) {
+                Log.e("YtExtractor", "Error for $videoId", e)
+                null
+            }
+        }
+    }
+
+    /**
+     * Pre-load stream URLs for multiple videoIds in parallel.
+     * Results are stored in the cache automatically. Fire-and-forget.
+     */
+    suspend fun preloadBatch(videoIds: List<String>) = coroutineScope {
+        videoIds
+            .filter { id -> urlCache[id]?.isExpired() != false }  // skip already-cached
+            .map { id -> async(Dispatchers.IO) { extractStreamUrl(id) } }
+            .forEach { it.await() }  // await all
     }
 
     /** Removes a cached entry so the next call re-extracts (useful on playback error). */

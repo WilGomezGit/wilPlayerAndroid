@@ -210,6 +210,110 @@ class MusicRepository @Inject constructor(
     suspend fun searchLocal(query: String): List<Song> =
         songDao.searchLocal(query).map { it.toDomain() }
 
+    // ── Songs by artist ───────────────────────────────────────────────────────
+
+    suspend fun getSongsByArtist(artist: String): List<Song> =
+        songDao.getSongsByArtist(artist).map { it.toDomain() }
+
+    // ── Import YouTube Playlist ───────────────────────────────────────────────
+
+    suspend fun importYouTubePlaylist(url: String): Result<Playlist> = try {
+        val key = getApiKey()
+        val ytPlaylistId = extractPlaylistId(url)
+            ?: throw IllegalArgumentException("URL de playlist inválida")
+
+        // Fetch all playlist items (paginated)
+        val allItems = mutableListOf<com.wilplayer.android.data.model.PlaylistItem>()
+        var pageToken: String? = null
+        do {
+            val response = apiService.getPlaylistItems(
+                playlistId = ytPlaylistId,
+                pageToken = pageToken,
+                apiKey = key,
+            )
+            allItems.addAll(response.items)
+            pageToken = response.nextPageToken
+        } while (pageToken != null && allItems.size < 200)  // safety limit
+
+        // Get video details for duration/stats
+        val videoIds = allItems.map { it.snippet.resourceId.videoId }
+        val detailsMap = mutableMapOf<String, com.wilplayer.android.data.model.VideoItem>()
+        videoIds.chunked(50).forEach { chunk ->
+            val ids = chunk.joinToString(",")
+            val details = apiService.getVideoDetails(videoIds = ids, apiKey = key)
+            details.items.forEach { detailsMap[it.id] = it }
+        }
+
+        // Map to songs
+        val songs = allItems.mapNotNull { item ->
+            val videoId = item.snippet.resourceId.videoId
+            val detail = detailsMap[videoId]
+            mapToSong(
+                videoId      = videoId,
+                title        = item.snippet.title,
+                channelTitle = item.snippet.channelTitle,
+                thumbnailUrl = item.snippet.thumbnails.high?.url
+                    ?: item.snippet.thumbnails.medium?.url ?: "",
+                duration     = detail?.contentDetails?.duration ?: "",
+                viewCount    = detail?.statistics?.viewCount,
+            )
+        }
+
+        // Cache songs locally
+        songDao.upsertSongs(songs.map { it.toEntity() })
+
+        // Create the playlist
+        val playlistName = allItems.firstOrNull()?.snippet?.channelTitle
+            ?.let { "YT: ${it}" } ?: "YouTube Playlist"
+        val id = java.util.UUID.randomUUID().toString()
+        playlistDao.upsertPlaylist(
+            PlaylistEntity(
+                id = id,
+                name = playlistName,
+                description = "Importada desde YouTube",
+                thumbnailUrl = songs.firstOrNull()?.thumbnailUrl ?: "",
+                createdAt = System.currentTimeMillis(),
+                isYouTubePlaylist = true,
+                youtubePlaylistId = ytPlaylistId,
+            )
+        )
+
+        // Link songs to playlist
+        songs.forEachIndexed { idx, song ->
+            playlistDao.addSongToPlaylist(
+                PlaylistSongCrossRef(playlistId = id, songId = song.id, position = idx)
+            )
+        }
+
+        Result.Success(
+            Playlist(
+                id = id,
+                name = playlistName,
+                songs = songs,
+                thumbnailUrl = songs.firstOrNull()?.thumbnailUrl ?: "",
+                isYouTubePlaylist = true,
+                youtubePlaylistId = ytPlaylistId,
+            )
+        )
+    } catch (e: Exception) {
+        Result.Error(e)
+    }
+
+    private fun extractPlaylistId(url: String): String? {
+        // Handles: youtube.com/playlist?list=PLxxx, youtu.be/playlist?list=PLxxx
+        val regex = Regex("[?&]list=([a-zA-Z0-9_-]+)")
+        regex.find(url)?.let { return it.groupValues[1] }
+        // If the user just pasted the ID directly
+        if (url.matches(Regex("^[a-zA-Z0-9_-]{10,}$"))) return url
+        return null
+    }
+
+    // ── Delete playlist ───────────────────────────────────────────────────────
+
+    suspend fun deletePlaylist(id: String) {
+        playlistDao.deletePlaylist(id)
+    }
+
     // ── Mapper ────────────────────────────────────────────────────────────────
 
     private fun mapToSong(

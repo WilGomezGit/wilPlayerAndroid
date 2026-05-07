@@ -8,7 +8,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -441,3 +440,4 @@ val DownloadIcon  get() = Icons.Filled.Download
 val MicIcon       get() = Icons.Filled.Mic
 val FilterIcon    get() = Icons.Filled.FilterList
 val CheckIcon     get() = Icons.Filled.CheckCircle
+val ChevronRightIcon get() = Icons.Filled.ChevronRight

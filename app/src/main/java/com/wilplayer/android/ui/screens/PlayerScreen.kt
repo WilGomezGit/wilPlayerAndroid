@@ -26,6 +26,10 @@ import com.wilplayer.android.ui.components.*
 import com.wilplayer.android.ui.theme.*
 import android.media.AudioManager
 import android.content.Intent
+import android.database.ContentObserver
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 
@@ -345,12 +349,25 @@ private fun ClassicPlayerContent(
                 Icon(QueueIcon, contentDescription = "Cola", tint = TextTertiary, modifier = Modifier.size(20.dp))
             }
 
-            // Volume slider — connected to system AudioManager
+            // Volume slider — synced with system AudioManager via ContentObserver
             val context = LocalContext.current
             val audioManager = remember { context.getSystemService(android.content.Context.AUDIO_SERVICE) as AudioManager }
             val maxVol = remember { audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).toFloat() }
             var currentVol by remember {
                 mutableFloatStateOf(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat())
+            }
+
+            // Keep slider in sync when physical buttons change volume
+            DisposableEffect(Unit) {
+                val observer = object : android.database.ContentObserver(android.os.Handler(android.os.Looper.getMainLooper())) {
+                    override fun onChange(selfChange: Boolean) {
+                        currentVol = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat()
+                    }
+                }
+                context.contentResolver.registerContentObserver(
+                    android.provider.Settings.System.CONTENT_URI, true, observer
+                )
+                onDispose { context.contentResolver.unregisterContentObserver(observer) }
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,

@@ -81,30 +81,37 @@ class MusicPlayerService : MediaSessionService() {
         super.onDestroy()
     }
 
-    // ── Next-item URL pre-resolution ──────────────────────────────────────────
-
     /**
-     * While the current song plays, resolve the next song's audio stream URL
-     * in the background and replace the placeholder YouTube watch URL with the
-     * real stream URL so ExoPlayer can load it without buffering gaps.
+     * While the current song plays, resolve the next 3 songs' audio stream URLs
+     * in parallel so ExoPlayer can load them without buffering gaps.
      */
     private fun preResolveNextItem() {
-        val nextIndex = player.currentMediaItemIndex + 1
-        if (nextIndex >= player.mediaItemCount) return
+        val currentIndex = player.currentMediaItemIndex
+        val totalItems = player.mediaItemCount
 
-        val nextItem = player.getMediaItemAt(nextIndex)
-        val uri = nextItem.localConfiguration?.uri ?: return
-        val videoId = extractYouTubeVideoId(uri) ?: return  // null = already a stream URL
+        // Collect up to 3 upcoming video IDs that still have placeholder YouTube URLs
+        val upcomingIds = (1..3).mapNotNull { offset ->
+            val idx = currentIndex + offset
+            if (idx >= totalItems) return@mapNotNull null
+            val item = player.getMediaItemAt(idx)
+            val uri = item.localConfiguration?.uri ?: return@mapNotNull null
+            extractYouTubeVideoId(uri)?.let { videoId -> Pair(idx, videoId) }
+        }
+
+        if (upcomingIds.isEmpty()) return
 
         serviceScope.launch {
-            val streamUrl = extractor.extractStreamUrl(videoId) ?: return@launch
-            val resolvedItem = nextItem.buildUpon()
-                .setUri(Uri.parse(streamUrl))
-                .build()
+            // Preload all 3 in parallel via preloadBatch
+            extractor.preloadBatch(upcomingIds.map { it.second })
+
+            // Replace placeholder URIs with resolved stream URLs on Main thread
             withContext(Dispatchers.Main) {
-                // Guard: index may have shifted if the queue changed
-                if (nextIndex < player.mediaItemCount) {
-                    player.replaceMediaItem(nextIndex, resolvedItem)
+                upcomingIds.forEach { (idx, videoId) ->
+                    val streamUrl = extractor.extractStreamUrl(videoId) ?: return@forEach
+                    if (idx < player.mediaItemCount) {
+                        val item = player.getMediaItemAt(idx)
+                        player.replaceMediaItem(idx, item.buildUpon().setUri(Uri.parse(streamUrl)).build())
+                    }
                 }
             }
         }

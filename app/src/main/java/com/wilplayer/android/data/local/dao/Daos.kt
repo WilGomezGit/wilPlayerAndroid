@@ -29,6 +29,9 @@ interface SongDao {
 
     @Query("SELECT * FROM songs WHERE title LIKE '%' || :q || '%' OR artist LIKE '%' || :q || '%' ORDER BY playCount DESC LIMIT 50")
     suspend fun searchLocal(q: String): List<SongEntity>
+
+    @Query("SELECT * FROM songs WHERE artist = :artist ORDER BY playCount DESC")
+    suspend fun getSongsByArtist(artist: String): List<SongEntity>
 }
 
 @Dao

@@ -3,6 +3,7 @@ package com.wilplayer.android.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wilplayer.android.data.repository.MusicRepository
+import com.wilplayer.android.data.repository.Result
 import com.wilplayer.android.domain.model.Playlist
 import com.wilplayer.android.domain.model.Song
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,6 +16,10 @@ data class LibraryUiState(
     val likedSongs: List<Song> = emptyList(),
     val artists: List<String> = emptyList(),
     val isLoading: Boolean = true,
+    val artistSongs: List<Song> = emptyList(),
+    val selectedArtist: String? = null,
+    val isImporting: Boolean = false,
+    val importError: String? = null,
 )
 
 @HiltViewModel
@@ -48,5 +53,37 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             repository.createPlaylist(name)
         }
+    }
+
+    // ── Artist songs ──────────────────────────────────────────────────────────
+
+    fun selectArtist(artist: String) {
+        viewModelScope.launch {
+            val songs = repository.getSongsByArtist(artist)
+            _uiState.update { it.copy(selectedArtist = artist, artistSongs = songs) }
+        }
+    }
+
+    fun clearSelectedArtist() {
+        _uiState.update { it.copy(selectedArtist = null, artistSongs = emptyList()) }
+    }
+
+    // ── Import YouTube playlist ───────────────────────────────────────────────
+
+    fun importYouTubePlaylist(url: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isImporting = true, importError = null) }
+            when (val result = repository.importYouTubePlaylist(url)) {
+                is Result.Success -> _uiState.update { it.copy(isImporting = false) }
+                is Result.Error   -> _uiState.update {
+                    it.copy(isImporting = false, importError = result.message)
+                }
+                else -> {}
+            }
+        }
+    }
+
+    fun clearImportError() {
+        _uiState.update { it.copy(importError = null) }
     }
 }
