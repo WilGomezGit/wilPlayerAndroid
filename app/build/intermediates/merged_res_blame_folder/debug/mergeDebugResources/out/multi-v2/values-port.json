@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.wilplayer.android.app-mergeDebugResources-81:/values-port/values-port.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\wilGo\\.gradle\\caches\\transforms-4\\7607cf44efc3adedb5bf709072d7cad5\\transformed\\appcompat-1.6.1\\res\\values-port\\values-port.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "55",
+                        "endOffsets": "106"
+                    }
+                }
+            ]
+        }
+    ]
+}

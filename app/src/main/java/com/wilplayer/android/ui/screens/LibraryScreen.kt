@@ -27,7 +27,6 @@ import com.wilplayer.android.ui.theme.*
 enum class LibraryTab(val label: String) {
     PLAYLISTS("Playlists"),
     LIKED("Me Gusta"),
-    ARTISTS("Artistas"),
 }
 
 @Composable
@@ -141,10 +140,6 @@ fun LibraryScreen(
                 },
                 onMoreClick = { song -> optionsSong = song }
             )
-            LibraryTab.ARTISTS -> ArtistList(
-                artists = uiState.artists,
-                onArtistClick = { artist -> vm.selectArtist(artist) }
-            )
         }
     }
 
@@ -175,21 +170,6 @@ fun LibraryScreen(
         )
     }
 
-    // ── Artist songs bottom sheet ──────────────────────────────────────────────
-    val selectedArtist = uiState.selectedArtist
-    if (selectedArtist != null) {
-        ArtistSongsSheet(
-            artist = selectedArtist,
-            songs = uiState.artistSongs,
-            onDismiss = { vm.clearSelectedArtist() },
-            onSongClick = { song ->
-                playerVm.playSong(song, uiState.artistSongs)
-                vm.clearSelectedArtist()
-                onNavigateToPlayer()
-            },
-            onMoreClick = { song -> optionsSong = song }
-        )
-    }
 
     // ── Song options sheet ─────────────────────────────────────────────────────
     optionsSong?.let { song ->
@@ -198,6 +178,20 @@ fun LibraryScreen(
             onDismiss = { optionsSong = null },
             onToggleLike = { playerVm.toggleLike(song) },
             onAddToQueue = { playerVm.addToQueue(song) },
+            onAddToPlaylist = { playerVm.onAddToPlaylistRequest(song) }
+        )
+    }
+
+    // ── Playlist Selection Dialog ─────────────────────────────────────────
+    val allPlaylists by playerVm.allPlaylists.collectAsStateWithLifecycle()
+    val songToAddToPlaylist by playerVm.showAddToPlaylistDialog.collectAsStateWithLifecycle()
+
+    if (songToAddToPlaylist != null) {
+        PlaylistSelectionDialog(
+            playlists = allPlaylists,
+            onPlaylistSelected = { playerVm.addToPlaylist(it, songToAddToPlaylist!!) },
+            onCreateNewPlaylist = { playerVm.addToNewPlaylist(it, songToAddToPlaylist!!) },
+            onDismiss = { playerVm.onDismissAddToPlaylistDialog() }
         )
     }
 }
@@ -313,96 +307,6 @@ private fun PlaylistItem(
         }
 
         Icon(MoreVertIcon, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(18.dp))
-    }
-}
-
-@Composable
-private fun ArtistList(
-    artists: List<String>,
-    onArtistClick: (String) -> Unit,
-) {
-    if (artists.isEmpty()) {
-        EmptyState("Sin artistas todavía.\nReproducir canciones los añade aquí.")
-        return
-    }
-    LazyColumn {
-        items(artists) { artist ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onArtistClick(artist) }
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .clip(RoundedCornerShape(26.dp))
-                        .background(Surface2),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(PersonIcon, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(26.dp))
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(artist, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                    Text("Artista", fontSize = 12.sp, color = TextSecondary)
-                }
-                Icon(ChevronRightIcon, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(18.dp))
-            }
-        }
-        item { Spacer(Modifier.height(16.dp)) }
-    }
-}
-
-@Composable
-private fun ArtistSongsSheet(
-    artist: String,
-    songs: List<Song>,
-    onDismiss: () -> Unit,
-    onSongClick: (Song) -> Unit,
-    onMoreClick: (Song) -> Unit,
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = Surface2,
-        dragHandle = { BottomSheetDefaults.DragHandle(color = TextTertiary) }
-    ) {
-        Column(modifier = Modifier.fillMaxHeight(0.75f)) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier.size(48.dp).clip(RoundedCornerShape(24.dp)).background(Surface3),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(PersonIcon, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(26.dp))
-                }
-                Column {
-                    Text(artist, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-                    Text("${songs.size} canciones", fontSize = 12.sp, color = TextSecondary)
-                }
-            }
-            if (songs.isEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text("Sin canciones guardadas", color = TextSecondary)
-                }
-            } else {
-                LazyColumn(modifier = Modifier.padding(bottom = 24.dp)) {
-                    itemsIndexed(songs) { idx, song ->
-                        SongListItem(
-                            song = song,
-                            isPlaying = false,
-                            paletteIndex = idx,
-                            onClick = { onSongClick(song) },
-                            onMoreClick = { onMoreClick(song) }
-                        )
-                    }
-                }
-            }
-        }
     }
 }
 

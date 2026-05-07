@@ -1,0 +1,74 @@
+[
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "com.wilplayer.android.app-main-85:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/xml_backup_rules.xml.flat",
+        "source": "com.wilplayer.android.app-main-85:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/mipmap-xxxhdpi_ic_launcher_adaptive_back.png.flat",
+        "source": "com.wilplayer.android.app-main-85:/mipmap-xxxhdpi/ic_launcher_adaptive_back.png"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/mipmap-xxxhdpi_ic_launcher_adaptive_fore.png.flat",
+        "source": "com.wilplayer.android.app-main-85:/mipmap-xxxhdpi/ic_launcher_adaptive_fore.png"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "com.wilplayer.android.app-main-85:/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/mipmap-mdpi_ic_launcher_adaptive_back.png.flat",
+        "source": "com.wilplayer.android.app-main-85:/mipmap-mdpi/ic_launcher_adaptive_back.png"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/mipmap-xxhdpi_ic_launcher_adaptive_back.png.flat",
+        "source": "com.wilplayer.android.app-main-85:/mipmap-xxhdpi/ic_launcher_adaptive_back.png"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "com.wilplayer.android.app-main-85:/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/mipmap-xxhdpi_ic_launcher_adaptive_fore.png.flat",
+        "source": "com.wilplayer.android.app-main-85:/mipmap-xxhdpi/ic_launcher_adaptive_fore.png"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "com.wilplayer.android.app-main-85:/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/mipmap-xhdpi_ic_launcher_adaptive_back.png.flat",
+        "source": "com.wilplayer.android.app-main-85:/mipmap-xhdpi/ic_launcher_adaptive_back.png"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/xml_data_extraction_rules.xml.flat",
+        "source": "com.wilplayer.android.app-main-85:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/mipmap-mdpi_ic_launcher_adaptive_fore.png.flat",
+        "source": "com.wilplayer.android.app-main-85:/mipmap-mdpi/ic_launcher_adaptive_fore.png"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/drawable_ic_splash.xml.flat",
+        "source": "com.wilplayer.android.app-main-85:/drawable/ic_splash.xml"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "com.wilplayer.android.app-main-85:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/mipmap-xhdpi_ic_launcher_adaptive_fore.png.flat",
+        "source": "com.wilplayer.android.app-main-85:/mipmap-xhdpi/ic_launcher_adaptive_fore.png"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/mipmap-hdpi_ic_launcher_adaptive_fore.png.flat",
+        "source": "com.wilplayer.android.app-main-85:/mipmap-hdpi/ic_launcher_adaptive_fore.png"
+    },
+    {
+        "merged": "com.wilplayer.android.app-debug-83:/mipmap-hdpi_ic_launcher_adaptive_back.png.flat",
+        "source": "com.wilplayer.android.app-main-85:/mipmap-hdpi/ic_launcher_adaptive_back.png"
+    }
+]

@@ -44,104 +44,89 @@ fun HomeScreen(
     ) {
         // ── Header ────────────────────────────────────────────────────────────
         item {
-            HomeHeader(onSearchClick = onNavigateToSearch)
+            HomeHeader()
         }
 
         // ── Greeting ──────────────────────────────────────────────────────────
         item {
-            Greeting(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+            Greeting(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
         }
 
-        // ── Quick access grid (recent playlists) ──────────────────────────────
-        if (uiState.recentPlaylists.isNotEmpty() || uiState.isLoading) {
-            item {
-                QuickAccessGrid(
-                    items = uiState.recentPlaylists.take(4),
-                    isLoading = uiState.isLoading,
-                    onItemClick = onNavigateToPlaylist,
-                    modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 20.dp)
-                )
-            }
+        // ── Your Playlists (Main Section) ──────────────────────────────────────
+        item {
+            SectionHeader(
+                title = "Tus Playlists",
+                onSeeAll = {},
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+        }
+        item {
+            QuickAccessGrid(
+                items = uiState.recentPlaylists,
+                isLoading = uiState.isLoading,
+                onItemClick = onNavigateToPlaylist,
+                modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp)
+            )
         }
 
-        // ── Continue listening ─────────────────────────────────────────────────
+        // ── Rock & Metal (Your style) ──────────────────────────────────────────
+        item {
+            SectionHeader(
+                title = "🎸 Lo mejor del Rock & Metal",
+                onSeeAll = {},
+                modifier = Modifier.padding(bottom = 10.dp)
+            )
+        }
+        item {
+            HorizontalSongCards(
+                songs = uiState.trending, // Using trending as a base for Rock & Metal
+                onSongClick = { song ->
+                    playerVm.playSong(song, uiState.trending)
+                    onNavigateToPlayer()
+                }
+            )
+            Spacer(Modifier.height(24.dp))
+        }
+
+        // ── Escuchado recientemente ─────────────────────────────────────────────
         if (uiState.recentSongs.isNotEmpty()) {
             item {
                 SectionHeader(
-                    title = "Continuar escuchando",
+                    title = "Escuchado recientemente",
                     onSeeAll = {},
                     modifier = Modifier.padding(bottom = 10.dp)
                 )
             }
             item {
-                HorizontalSongCards(
+                HorizontalSongRows(
                     songs = uiState.recentSongs,
                     onSongClick = { song ->
                         playerVm.playSong(song, uiState.recentSongs)
                         onNavigateToPlayer()
                     }
                 )
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(24.dp))
             }
         }
 
-        // ── Rock & Metal ──────────────────────────────────────────────────────
-        if (uiState.trending.isNotEmpty() || uiState.isLoading) {
+        // ── Recommendations for you ───────────────────────────────────────────
+        if (uiState.recommendations.isNotEmpty()) {
             item {
                 SectionHeader(
-                    title = "Rock & Metal",
-                    onSeeAll = {},
+                    title = "Basado en tus búsquedas",
+                    onSeeAll = { vm.loadRecommendations() },
                     modifier = Modifier.padding(bottom = 10.dp)
                 )
             }
-            if (uiState.isLoading) {
-                item { TrendingShimmer() }
-            } else {
-                item {
-                    HorizontalSongRows(
-                        songs = uiState.trending,
-                        onSongClick = { song ->
-                            playerVm.playSong(song, uiState.trending)
-                            onNavigateToPlayer()
-                        }
-                    )
-                    Spacer(Modifier.height(20.dp))
-                }
-            }
-        }
-
-        // ── Mood selector ─────────────────────────────────────────────────────
-        item {
-            SectionHeader(
-                title = "Según tu estado de ánimo",
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-            MoodRow(onMoodClick = { mood -> vm.searchByMood(mood) })
-            Spacer(Modifier.height(8.dp))
-        }
-
-        // ── Rock & Metal recommendations ──────────────────────────────────────
-        if (uiState.recommendations.isNotEmpty() || uiState.isLoadingRecs) {
             item {
-                SectionHeader(
-                    title = "🎸 Rock & Metal para ti",
-                    onSeeAll = { vm.loadRecommendations() },
-                    modifier = Modifier.padding(top = 12.dp, bottom = 10.dp)
+                HorizontalSongCards(
+                    songs = uiState.recommendations,
+                    onSongClick = { song ->
+                        playerVm.playSong(song, uiState.recommendations)
+                        onNavigateToPlayer()
+                    }
                 )
-            }
-            if (uiState.isLoadingRecs) {
-                item { RecsShimmer() }
-            } else {
-                item {
-                    HorizontalSongCards(
-                        songs = uiState.recommendations,
-                        onSongClick = { song ->
-                            playerVm.playSong(song, uiState.recommendations)
-                            onNavigateToPlayer()
-                        }
-                    )
-                    Spacer(Modifier.height(20.dp))
-                }
+                Spacer(Modifier.height(24.dp))
             }
         }
 
@@ -161,7 +146,7 @@ fun HomeScreen(
 // ── Header ────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun HomeHeader(onSearchClick: () -> Unit) {
+private fun HomeHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -175,27 +160,14 @@ private fun HomeHeader(onSearchClick: () -> Unit) {
             fontWeight = FontWeight.ExtraBold
         )
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(GradientBtn),
+            contentAlignment = Alignment.Center
         ) {
-            IconButton(onClick = onSearchClick) {
-                Icon(
-                    imageVector = SearchIcon,
-                    contentDescription = "Buscar",
-                    tint = TextSecondary,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .size(30.dp)
-                    .clip(CircleShape)
-                    .background(GradientBtn),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("W", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            }
+            Text("W", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
     }
 }
@@ -348,44 +320,6 @@ private fun HorizontalSongRows(
     }
 }
 
-// ── Mood Row ──────────────────────────────────────────────────────────────────
-
-@Composable
-private fun MoodRow(onMoodClick: (String) -> Unit) {
-    val moods = listOf(
-        Triple("🤘 Clásicos", 0, "classic rock"),
-        Triple("🎸 Hard Rock", 1, "hard rock hits"),
-        Triple("💀 Metal", 2, "heavy metal"),
-        Triple("🎤 Alternativo", 3, "alternative rock"),
-        Triple("🎵 Indie Rock", 4, "indie rock playlist"),
-    )
-
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        items(moods) { (label, paletteIdx, query) ->
-            val palette = COVER_PALETTES[paletteIdx % COVER_PALETTES.size]
-            Box(
-                modifier = Modifier
-                    .size(90.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Brush.linearGradient(listOf(palette.colorA, palette.colorB)))
-                    .clickable { onMoodClick(query) },
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(palette.emoji, fontSize = 28.sp)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        label, fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-            }
-        }
-    }
-}
 
 // ── Shimmer states ────────────────────────────────────────────────────────────
 

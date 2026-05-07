@@ -5,6 +5,8 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -390,6 +392,119 @@ fun SongOptionsSheet(
                     onDismiss()
                 }
             )
+        }
+    }
+}
+
+@Composable
+fun PlaylistSelectionDialog(
+    playlists: List<Playlist>,
+    onPlaylistSelected: (Playlist) -> Unit,
+    onCreateNewPlaylist: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var newName by remember { mutableStateOf("") }
+
+    if (showCreateDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreateDialog = false },
+            containerColor = Surface2,
+            title = { Text("Nueva Playlist", color = TextPrimary) },
+            text = {
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    placeholder = { Text("Nombre de la lista", color = TextTertiary) },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedBorderColor = AccentPurple,
+                        unfocusedBorderColor = Border2,
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { 
+                    if (newName.isNotBlank()) {
+                        onCreateNewPlaylist(newName)
+                        showCreateDialog = false
+                    }
+                }) {
+                    Text("Crear y añadir", color = AccentPurple)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCreateDialog = false }) {
+                    Text("Cancelar", color = TextSecondary)
+                }
+            }
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Surface2,
+        title = { Text("Añadir a playlist", color = TextPrimary) },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // Option to create new
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showCreateDialog = true }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)).background(Surface3),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(AddIcon, null, tint = AccentPurple)
+                    }
+                    Text("Crear nueva playlist", color = TextPrimary, fontWeight = FontWeight.Bold)
+                }
+                
+                HorizontalDivider(color = Border1)
+                
+                // List of existing
+                LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
+                    items(playlists) { playlist ->
+                        PlaylistRow(playlist = playlist, onClick = { onPlaylistSelected(playlist) })
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cerrar", color = TextSecondary)
+            }
+        }
+    )
+}
+
+@Composable
+private fun PlaylistRow(playlist: Playlist, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)).background(Surface3),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(LibraryIcon, null, tint = TextSecondary, modifier = Modifier.size(20.dp))
+        }
+        Column {
+            Text(playlist.name, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text("${playlist.songCount} canciones", color = TextSecondary, fontSize = 11.sp)
         }
     }
 }

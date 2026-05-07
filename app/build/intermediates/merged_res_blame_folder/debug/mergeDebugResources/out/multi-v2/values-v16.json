@@ -1,0 +1,38 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.wilplayer.android.app-mergeDebugResources-81:/values-v16/values-v16.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\wilGo\\.gradle\\caches\\transforms-4\\7607cf44efc3adedb5bf709072d7cad5\\transformed\\appcompat-1.6.1\\res\\values-v16\\values-v16.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "5",
+                        "endColumns": "12",
+                        "endOffsets": "223"
+                    },
+                    "to": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "121",
+                        "endLines": "6",
+                        "endColumns": "12",
+                        "endOffsets": "289"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\wilGo\\.gradle\\caches\\transforms-4\\c3a61c3dcb4e0b3c224c6959f8f2cdf6\\transformed\\core-1.12.0\\res\\values-v16\\values-v16.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "65",
+                        "endOffsets": "116"
+                    }
+                }
+            ]
+        }
+    ]
+}

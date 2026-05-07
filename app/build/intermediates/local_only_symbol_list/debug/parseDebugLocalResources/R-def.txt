@@ -1,0 +1,14 @@
+R_DEF: Internal format may change without notice
+local
+drawable ic_splash
+mipmap ic_launcher
+mipmap ic_launcher_adaptive_back
+mipmap ic_launcher_adaptive_fore
+string app_description
+string app_name
+string channel_playback_description
+string channel_playback_name
+style Theme.WilPlayer
+style Theme.WilPlayer.SplashScreen
+xml backup_rules
+xml data_extraction_rules

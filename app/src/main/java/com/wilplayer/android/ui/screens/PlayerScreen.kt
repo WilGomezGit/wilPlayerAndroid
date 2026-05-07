@@ -208,7 +208,21 @@ fun PlayerScreen(
                 song = song,
                 onDismiss = { showOptions = false },
                 onToggleLike = { playerVm.toggleLike(song) },
-                onAddToQueue = { /* already in queue */ },
+                onAddToQueue = { playerVm.addToQueue(song) },
+                onAddToPlaylist = { playerVm.onAddToPlaylistRequest(song) },
+            )
+        }
+
+        // ── Playlist Selection Dialog ─────────────────────────────────────────
+        val addToPlaylistSong by playerVm.showAddToPlaylistDialog.collectAsStateWithLifecycle()
+        val allPlaylists by playerVm.allPlaylists.collectAsStateWithLifecycle()
+
+        if (addToPlaylistSong != null) {
+            PlaylistSelectionDialog(
+                playlists = allPlaylists,
+                onPlaylistSelected = { playerVm.addToPlaylist(it, addToPlaylistSong!!) },
+                onCreateNewPlaylist = { playerVm.addToNewPlaylist(it, addToPlaylistSong!!) },
+                onDismiss = { playerVm.onDismissAddToPlaylistDialog() }
             )
         }
     }

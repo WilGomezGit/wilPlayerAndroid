@@ -114,70 +114,17 @@ fun SearchScreen(
         )
     }
 
-    // ── Add to playlist dialog ────────────────────────────────────────────────
+    // ── Playlist Selection Dialog ─────────────────────────────────────────
     val playlists by playerVm.allPlaylists.collectAsStateWithLifecycle()
     val songToAddToPlaylist by playerVm.showAddToPlaylistDialog.collectAsStateWithLifecycle()
 
-    songToAddToPlaylist?.let { song ->
-        var showNewPlaylistDialog by remember { mutableStateOf(false) }
-        var newPlaylistName by remember { mutableStateOf("") }
-
-        AlertDialog(
-            onDismissRequest = { playerVm.onDismissAddToPlaylistDialog() },
-            title = { Text("Seleccionar Playlist") },
-            text = {
-                if (playlists.isEmpty()) {
-                    Text("No tienes playlists. Crea una nueva.")
-                } else {
-                    LazyColumn {
-                        items(playlists) { playlist ->
-                            TextButton(onClick = { playerVm.addToPlaylist(playlist, song) }) {
-                                Text(playlist.name)
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showNewPlaylistDialog = true }) {
-                    Text("Nueva Playlist")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { playerVm.onDismissAddToPlaylistDialog() }) {
-                    Text("Cancelar")
-                }
-            }
+    if (songToAddToPlaylist != null) {
+        PlaylistSelectionDialog(
+            playlists = playlists,
+            onPlaylistSelected = { playerVm.addToPlaylist(it, songToAddToPlaylist!!) },
+            onCreateNewPlaylist = { playerVm.addToNewPlaylist(it, songToAddToPlaylist!!) },
+            onDismiss = { playerVm.onDismissAddToPlaylistDialog() }
         )
-
-        if (showNewPlaylistDialog) {
-            AlertDialog(
-                onDismissRequest = { showNewPlaylistDialog = false },
-                title = { Text("Nombre de la Playlist") },
-                text = {
-                    OutlinedTextField(
-                        value = newPlaylistName,
-                        onValueChange = { newPlaylistName = it },
-                        label = { Text("Nombre") }
-                    )
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        if (newPlaylistName.isNotBlank()) {
-                            playerVm.addToNewPlaylist(newPlaylistName, song)
-                            showNewPlaylistDialog = false
-                        }
-                    }) {
-                        Text("Crear")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showNewPlaylistDialog = false }) {
-                        Text("Cancelar")
-                    }
-                }
-            )
-        }
     }
 }
 
